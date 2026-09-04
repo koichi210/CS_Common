@@ -265,6 +265,11 @@ namespace StandardTemplate
             return false;
         }
 
+        public String GetAbsolutePath(String RelativePath)
+        {
+            return Path.GetFullPath(RelativePath);
+        }
+
         // ファイルパス実行
         public Boolean ExecutePath(String ExecPath, Boolean NoWindow = false)
         {
@@ -838,7 +843,10 @@ namespace StandardTemplate
             if (e.KeyCode == Keys.C && e.Control == true)
             {
                 String TargetName = GetSelectListName(ListViewCtrl, RootPath, index);
-                Clipboard.SetText(TargetName);
+	            if (!TargetName.Equals(String.Empty))
+	            {
+	                Clipboard.SetText(TargetName);
+	            }
             }
         }
 
@@ -912,7 +920,7 @@ namespace StandardTemplate
         }
 
         // 文字配列（SubString）をコンボボックスにセット
-        public void SetComboBoxFromArraySubString(ComboBox ComboCtrl, String[] Array, int StartIdx, String EndDelimiter = "", String LimitString = "")
+        public void SetComboBoxFromArraySubString(ComboBox ComboCtrl, String[] Array, int StartIdx, String EndDelimiter = "", String LimitString = "", Boolean IsReverse = false)
         {
             ComboCtrl.Items.Clear();
             for (int i = 0; i < Array.Length; i++)
@@ -926,7 +934,16 @@ namespace StandardTemplate
                 }
 
                 // 文字列生成
-                int Length = ValueName.IndexOf(EndDelimiter);
+                int Length;
+                if (!IsReverse)
+                {
+                    Length = ValueName.IndexOf(EndDelimiter);
+                }
+                else
+                {
+                    Length = ValueName.LastIndexOf(EndDelimiter);
+                }
+
                 if (Length >= 0 && Length > StartIdx)
                 {
                     ValueName = ValueName.Substring(StartIdx, Length - StartIdx);
@@ -939,7 +956,8 @@ namespace StandardTemplate
                 // 文字の絞り込み
                 if (LimitString != String.Empty)
                 {
-                    if (ValueName.IndexOf(ComboCtrl.Text) < 0)
+                    // 大文字小文字を区別せずに部分一致で検索
+                    if (ValueName.IndexOf(ComboCtrl.Text,StringComparison.OrdinalIgnoreCase) < 0)
                     {
                         continue;
                     }
@@ -994,7 +1012,7 @@ namespace StandardTemplate
         }
 
         // コンボボックスの中から目的の文字列を探す
-        public String FindStringFromComboBox(ComboBox CmbCtrl, String SrcName, String TrimName = "")
+        public String FindStringFromComboBox(ComboBox CmbCtrl, String SrcName, String TrimName = "", Boolean IsReverse = false)
         {
             String SerchName = SrcName;
             String DestName = "";
@@ -1002,7 +1020,16 @@ namespace StandardTemplate
             // SrcTrimNameが設定されていたら、特定の文字列で区切る
             if (TrimName != String.Empty)
             {
-                int FileNameidx = SrcName.IndexOf(TrimName);
+                int FileNameidx;
+                if (!IsReverse)
+                {
+                    FileNameidx = SrcName.IndexOf(TrimName);
+                }
+                else
+                {
+                    FileNameidx = SrcName.LastIndexOf(TrimName);
+                }
+
                 if (0 <= FileNameidx)
                 {
                     SerchName = SrcName.Substring(0, FileNameidx);
@@ -1930,6 +1957,11 @@ namespace StandardTemplate
         // ファイル保存[StringArray]
         public void SaveXmlParamAll(String AttrName, String AttrValue, String[] StrArray)
         {
+            if(StrArray == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < StrArray.Length; i++)
             {
                 SaveXmlString(AttrName, AttrValue + i.ToString(), StrArray[i]);
@@ -1945,6 +1977,11 @@ namespace StandardTemplate
         // ファイル保存[byte]
         public void SaveXmlManageParam(String AttrName, String AttrValue, byte[] Value)
         {
+            if (Value == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < Value.Length; i++)
             {
                 SaveXmlString(AttrName, AttrValue + i.ToString(), Value[i].ToString());
@@ -2333,7 +2370,7 @@ namespace StandardTemplate
         // フォルダパス取得ダイアログ
         public String GetDirectoryPath(String Title = "フォルダを指定してください。", String DefaultPath = "", Boolean IsNewFolder = false)
         {
-            String PathName = DefaultPath;
+            String PathName = "";
 
             FolderBrowserDialog fd = new FolderBrowserDialog();
 
@@ -3077,7 +3114,6 @@ namespace StandardTemplate
         public void Stop()
         {
             IsStopRequest = true;
-            MessageBox.Show("処理を中断します");
         }
 
         // マウスを移動させるか
@@ -3182,21 +3218,7 @@ namespace StandardTemplate
 
             String PictFileName = FileFormat + "_" + FileIdx.ToString() + ".png";
             FileIdx++;  // 次使うとき用にインクリ
-            
-            if (File.Exists(PictFileName))
-            {
-                String Msg = "すでにファイルが存在します。" + Environment.NewLine + "上書きしますか？";
-                DialogResult result = MessageBox.Show(Msg,
-                    "Warning",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Exclamation,
-                    MessageBoxDefaultButton.Button1);
-                if (result == DialogResult.No)
-                {
-                    Stop();
-                    return;
-                }
-            }
+
             if (!CaptureEvent(PictFileName))
             {
                 // 処理失敗したファイル名を追記
