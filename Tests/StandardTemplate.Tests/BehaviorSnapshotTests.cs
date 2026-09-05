@@ -161,7 +161,7 @@ namespace StandardTemplate.Tests
             r.Section("StcUtils.GetFilePathType(String)");
             foreach (string s in new[]
             {
-                @"C:\work\a.txt", "//depot/main/a.txt", "home/ogu/a.txt", @"work\a.txt",
+                @"C:\work\a.txt", "//depot/main/a.txt", "home/user/a.txt", @"work\a.txt",
                 "a.txt", "", @"\\server\share", "C:/work", "//"
             })
             {
@@ -180,7 +180,7 @@ namespace StandardTemplate.Tests
             r.Section("StcUtils.ChangeWindowsPath2CygwinPath(String)");
             foreach (string s in new[]
             {
-                @"C:\work\a.txt", @"D:\", @"work\a.txt", "C:/work", "/home/ogu", ""
+                @"C:\work\a.txt", @"D:\", @"work\a.txt", "C:/work", "/home/user", ""
             })
             {
                 string t = s;
@@ -190,7 +190,7 @@ namespace StandardTemplate.Tests
             r.Section("StcUtils.ChangeCygwinPath2WindowsPath(String)");
             foreach (string s in new[]
             {
-                "/cygdrive/c/work/a.txt", "/cygdrive/c", @"C:\work", "/home/ogu", ""
+                "/cygdrive/c/work/a.txt", "/cygdrive/c", @"C:\work", "/home/user", ""
             })
             {
                 string t = s;
@@ -218,7 +218,7 @@ namespace StandardTemplate.Tests
                 new[] { "a/", "b" },
                 new[] { "a", "/b" },
                 new[] { "a/", "/b" },
-                new[] { "/home/ogu", "work" },
+                new[] { "/home/user", "work" },
                 new[] { "", "" },
             })
             {

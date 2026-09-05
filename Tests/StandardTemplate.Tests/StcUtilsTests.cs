@@ -39,7 +39,7 @@ namespace StandardTemplate.Tests
         [TestMethod]
         public void GetFilePathType_スラッシュ区切りはLinuxパス扱い()
         {
-            Assert.AreEqual(StcUtils.FILE_PATH_TYPE.LINUX_PATH, util.GetFilePathType("home/ogu/a.txt"));
+            Assert.AreEqual(StcUtils.FILE_PATH_TYPE.LINUX_PATH, util.GetFilePathType("home/user/a.txt"));
         }
 
         [TestMethod]

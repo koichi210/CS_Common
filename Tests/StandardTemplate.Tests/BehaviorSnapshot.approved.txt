@@ -70,7 +70,7 @@
 ## StcUtils.GetFilePathType(String)
   "C:\work\a.txt"       ->  WINDOWS_FULLPATH
   "//depot/main/a.txt"  ->  PERFORCE_PATH
-  "home/ogu/a.txt"      ->  LINUX_PATH
+  "home/user/a.txt"     ->  LINUX_PATH
   "work\a.txt"          ->  WINDOWS_PATH
   "a.txt"               ->  OTHER
   ""                    ->  OTHER
@@ -91,14 +91,14 @@
   "D:\"            ->  "/cygdrive/D/"
   "work\a.txt"     ->  "work/a.txt"
   "C:/work"        ->  "C:/work"
-  "/home/ogu"      ->  "/home/ogu"
+  "/home/user"     ->  "/home/user"
   ""               ->  ""
 
 ## StcUtils.ChangeCygwinPath2WindowsPath(String)
   "/cygdrive/c/work/a.txt"  ->  "c:\work\a.txt"
   "/cygdrive/c"             ->  "c:"
   "C:\work"                 ->  "C:\work"
-  "/home/ogu"               ->  "/home/ogu"
+  "/home/user"              ->  "/home/user"
   ""                        ->  ""
 
 ## StcUtils.ChangeWindowsPath2LinuxPath(String) / ChangeLinuxPath2WindowsPath(String)
@@ -117,12 +117,12 @@
   W2L 空配列               ->  [] (0件)
 
 ## StcUtils.AppendLinuxPathName(String Path1, String Path2)
-  "a", "b"             ->  "a/b"
-  "a/", "b"            ->  "a/b"
-  "a", "/b"            ->  "a/b"
-  "a/", "/b"           ->  "a/b"
-  "/home/ogu", "work"  ->  "/home/ogu/work"
-  "", ""               ->  "/"
+  "a", "b"              ->  "a/b"
+  "a/", "b"             ->  "a/b"
+  "a", "/b"             ->  "a/b"
+  "a/", "/b"            ->  "a/b"
+  "/home/user", "work"  ->  "/home/user/work"
+  "", ""                ->  "/"
 
 ## StcUtils.ChangeNewLineCodeLF2CRLF(String) / ChangeNewLineCodeCRLF2LF(String)
   LF2CRLF "a\nb"    ->  "a\r\nb"

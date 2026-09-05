@@ -60,7 +60,7 @@ namespace StandardTemplate.Tests
         public void ChangeCygwinPath2WindowsPath_対象外のパスはそのまま返る()
         {
             Assert.AreEqual(@"C:\work", util.ChangeCygwinPath2WindowsPath(@"C:\work"), "すでに Windows 形式ならそのまま");
-            Assert.AreEqual("/home/ogu", util.ChangeCygwinPath2WindowsPath("/home/ogu"), "cygdrive でなければそのまま");
+            Assert.AreEqual("/home/user", util.ChangeCygwinPath2WindowsPath("/home/user"), "cygdrive でなければそのまま");
             Assert.AreEqual("", util.ChangeCygwinPath2WindowsPath(""));
         }
 
@@ -84,7 +84,7 @@ namespace StandardTemplate.Tests
             Assert.AreEqual("a/b", util.AppendLinuxPathName("a/", "b"), "前にあれば足さない");
             Assert.AreEqual("a/b", util.AppendLinuxPathName("a", "/b"), "後にあれば足さない");
             Assert.AreEqual("a/b", util.AppendLinuxPathName("a/", "/b"), "両方にあれば片方を落とす");
-            Assert.AreEqual("/home/ogu/work", util.AppendLinuxPathName("/home/ogu", "work"));
+            Assert.AreEqual("/home/user/work", util.AppendLinuxPathName("/home/user", "work"));
         }
 
         [TestMethod]
