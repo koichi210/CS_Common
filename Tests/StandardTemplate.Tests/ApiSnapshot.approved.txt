@@ -1,0 +1,215 @@
+﻿# StandardTemplate public API snapshot
+# このファイルは自動生成。手で編集しないこと。
+# 差分が出た = 呼び出し側に影響する変更をした、という意味。
+
+TYPE public class StandardTemplate.CaptWindow
+    CTOR   public CaptWindow()
+    FIELD  public Boolean IsCaptureCase
+    FIELD  public Boolean IsMouseMove
+    FIELD  public Boolean IsRestoreMousePos
+    FIELD  public Boolean IsStopRequest
+    FIELD  public CAPTURE_TARGET CaptureTarget
+    FIELD  public Int32 FileIdx
+    FIELD  public MOUSE_EVENT MouseEvent
+    FIELD  public Point MousePt
+    FIELD  public String FileFormat
+    FIELD  public TimeSpan SleepCycleMsec
+    FIELD  public TimeSpan SleepTimeMsec
+    METHOD public Boolean SetMousePoint(String x, String y)
+    METHOD public String GetErrorLog()
+    METHOD public Void CaptureProc()
+    METHOD public Void ExecuteSleep()
+    METHOD public Void Initialize()
+    METHOD public Void MouseProc()
+    METHOD public Void MouseProc(String x, String y, MOUSE_EVENT Event)
+    METHOD public Void RestoreMousePosition(Boolean IsResotre)
+    METHOD public Void SetCaptureCase(Boolean IsCapture)
+    METHOD public Void SetCaptureTarget(CAPTURE_TARGET CaptTarget)
+    METHOD public Void SetFileFormat(String format)
+    METHOD public Void SetFileIdx(Int32 idx)
+    METHOD public Void SetMouseEvent(MOUSE_EVENT Event)
+    METHOD public Void SetMouseMove(Boolean IsMove)
+    METHOD public Void SetSleepTimeMsec(String msec)
+    METHOD public Void Stop()
+
+TYPE public enum StandardTemplate.CaptWindow+CAPTURE_TARGET
+    ENUM   CURRENT_SCREEN = 1
+    ENUM   CURRENT_WINDOW = 2
+    ENUM   FULL_SCREEN = 0
+
+TYPE public enum StandardTemplate.CaptWindow+MOUSE_EVENT
+    ENUM   LEFT_CLICK = 1
+    ENUM   LEFT_DOWN = 2
+    ENUM   LEFT_UP = 3
+    ENUM   MOVE = 0
+
+TYPE public class StandardTemplate.StcCheck
+    CTOR   public StcCheck()
+    METHOD public Boolean IsExistCygwinDir(String CygwinDir = "")
+    METHOD public Boolean IsExistRemoteProcFile(String BaseDir = "")
+    METHOD public Boolean IsPossibleCygwinBin(String BinName = "")
+
+TYPE public class StandardTemplate.StcDebug
+    CTOR   public StcDebug()
+    CTOR   public StcDebug(Boolean IsMode)
+    METHOD public Boolean GetDebugMode()
+    METHOD public Boolean GetUseTimeInFileName()
+    METHOD public Boolean GetWriteTime()
+    METHOD public String GetDebugLogFilename()
+    METHOD public Void SetDebugLogFilename(String LogFile)
+    METHOD public Void SetDebugMode(Boolean IsMode)
+    METHOD public Void SetUseTimeInFileName(Boolean UseTime)
+    METHOD public Void SetWriteTime(Boolean WriteTime)
+    METHOD public Void WriteData(String Data, Boolean IsAppend = true)
+    METHOD public Void WriteDataInNewFile(String Data, String FilenameSuffixStr = "", String Extension = "txt")
+
+TYPE public class StandardTemplate.StcDraw
+    METHOD protected virtual Void Finalize()
+    METHOD public Void AdjustScale(Size ImgSize)
+    METHOD public Void DrawFillRect(Brush color, Int32 x, Int32 y, Int32 width, Int32 height)
+    METHOD public Void DrawFillRectWidthBorderLine(Brush color, Int32 x, Int32 y, Int32 width, Int32 height)
+    METHOD public Void DrawRectBorderLine(Int32 x, Int32 y, Int32 width, Int32 height)
+    METHOD public Void FillBackground(Brush color)
+    METHOD public Void SetPenColor(Brush color)
+    METHOD public Void SetPenWidth(Int32 width)
+    PROP   public Bitmap canvas { public get; }
+
+TYPE public class StandardTemplate.StcException : Exception
+    CTOR   protected StcException(SerializationInfo info, StreamingContext context)
+    CTOR   public StcException()
+    CTOR   public StcException(String msg)
+    CTOR   public StcException(String msg, Exception inner)
+
+TYPE public class StandardTemplate.StcFileInputOutput
+    CTOR   public StcFileInputOutput()
+    METHOD public Boolean ChangeStringCodeEUC2SJIS(String InFileName, String OutFileName)
+    METHOD public Boolean ChangeStringCodeUTF2SJIS(String InFileName, String OutFileName)
+    METHOD public Boolean DeleteAnyFile(String TargetName)
+    METHOD public Boolean DeleteDirectoryAndFile(String DeletePath)
+    METHOD public Boolean DeleteFileWithRemoveReadonlyAttribute(String DeleteFile)
+    METHOD public Boolean DetectFileData(String FilePath, String DetectWord)
+    METHOD public Boolean FileCopy(String SourcePath, String TargetPath)
+    METHOD public Boolean FileMove(String SourcePath, String TargetPath)
+    METHOD public Boolean IsAuthorityOverwrite(String FilePath)
+    METHOD public Boolean IsExistDirectory(String Path, Boolean IsAutoCreate = false)
+    METHOD public Boolean IsExistSubDirectory(String Path)
+    METHOD public Boolean IsSaveValidFilePath(String FilePathName)
+    METHOD public Boolean RemoveReadonlyAttribute(String FileName)
+    METHOD public String CreateTempFile(String Ext = "")
+    METHOD public String GetDirectoryPath(String Title = "フォルダを指定してください。", String DefaultPath = "", Boolean IsNewFolder = false)
+    METHOD public String GetFileData(String FilePath)
+    METHOD public String GetFirstPathName(String Path)
+    METHOD public String GetLastPathName(String Path)
+    METHOD public String LoadFile(String FilePath)
+    METHOD public String SelectLoadFileName(String FileName = "")
+    METHOD public String SelectSaveFileName(String FileName)
+    METHOD public Void CreateFile(String FileName, String Data, Boolean DebugMode = false)
+    METHOD public Void CreateFile(String FileName, String Data, ENCORD_TYPE EncordType, Boolean DebugMode = false)
+    METHOD public Void MoveDirectory(String SourcePath, String TargetPath, Boolean IsSubDirInclude = true)
+    METHOD public Void RemoveReadonlyAttribute(DirectoryInfo dirInfo)
+    METHOD public Void RemoveReadonlyAttribute(FileInfo fi)
+    METHOD public Void SaveFile(String FilePath, String Data, Boolean IsAppend = false)
+
+TYPE public enum StandardTemplate.StcFileInputOutput+ENCORD_TYPE
+    ENUM   EUC_JP = 1
+    ENUM   SHIFT_JIS = 0
+
+TYPE public class StandardTemplate.StcImage
+    CTOR   public StcImage()
+    METHOD public Size GetImageSize(String FilePath)
+
+TYPE public class StandardTemplate.StcSecure
+    CTOR   public StcSecure()
+    METHOD public String Decode(String Word)
+    METHOD public String Decode(String str, Byte[] DesKey, Byte[] DesIV, Byte[] cryptData)
+    METHOD public String Encode(String Word)
+    METHOD public String Encode(String str, out Byte[] DesKey, out Byte[] DesIV, out Byte[] cryptData)
+
+TYPE public class StandardTemplate.StcUtils
+    CTOR   public StcUtils()
+    METHOD public Boolean DropFileNames(DragEventArgs e, TextBox TextCtrl, Boolean IsClear = false)
+    METHOD public Boolean ExecuteFileSupportReadOnly(String ExecPath, KeyEventArgs e)
+    METHOD public Boolean ExecutePath(String ExecPath, Boolean NoWindow = false)
+    METHOD public Boolean ExecutePath(String ExecPath, KeyEventArgs e)
+    METHOD public Boolean ExecutePath(String ExecPath, String Param, Boolean NoWindow = false)
+    METHOD public Boolean GetBoolean(String Text, String DetectWord = "True")
+    METHOD public Boolean GetDataGridCellBool(DataGridView dgv, Int32 RowCount, Int32 ColumnCount)
+    METHOD public Boolean IsAliveHost(String HostName)
+    METHOD public Boolean IsExistDirectory(String DirectoryPath, Boolean IsNoticeExceptMsg = false, String ExceptMsgStr = "")
+    METHOD public Boolean IsExistFile(String FilePath, Boolean IsNoticeExceptMsg = false, String ExceptMsgStr = "")
+    METHOD public Boolean IsExistFileNameInEnvironment(String FileName = "")
+    METHOD public Boolean IsExistFiles(String[] Filename, String BaseDir = "")
+    METHOD public Boolean IsExistPath(String FilePath)
+    METHOD public Boolean IsKeyPressNumber(KeyPressEventArgs e)
+    METHOD public Boolean IsStartingProcess(String ProcessName, String MachineName = "")
+    METHOD public Boolean IsWindowsPath(String Path)
+    METHOD public FILE_PATH_TYPE GetFilePathType(String FilePath)
+    METHOD public Int32 GetInteger(String Text)
+    METHOD public Int64 GetNumber(String SrcString, Int32 DefaultDigitNum = 1)
+    METHOD public Int64 GetNumber(String SrcString, Int32 StartIdx, Int32 Length, String DefaultString = "01")
+    METHOD public Int64 GetNumberFromRear(String SrcString, Int32 EndIdx, Int32 Length, String DefaultString = "01")
+    METHOD public Int64 GetNumberFromRear(String SrcString, String EndIdxString, String LengthString, String DefaultString = "01")
+    METHOD public List<String> Array2List(String[] StringArray)
+    METHOD public Process ExecuteProcess(String ExecPath, Boolean NoWindow)
+    METHOD public Process ExecuteProcess(String ExecPath, String Param = "", Boolean NoWindow = false)
+    METHOD public Process ExecuteProcess(out String Output, String ExecPath, String Param = "")
+    METHOD public Size GetPictSize(String ImgFileName)
+    METHOD public String AdjustDirectoryName(String SrcDirName)
+    METHOD public String AppendLinuxPathName(String Path1, String Path2)
+    METHOD public String ChangeCygwinPath2WindowsPath(String OldPath)
+    METHOD public String ChangeDoubleQuote2BackSlashDoubleQuote(String Source)
+    METHOD public String ChangeLinuxPath2WindowsPath(String OldPath)
+    METHOD public String ChangeNewLineCode(ENCORD_TYPE EncordType, String Source)
+    METHOD public String ChangeNewLineCodeCRLF2LF(String Source)
+    METHOD public String ChangeNewLineCodeLF2CRLF(String Source)
+    METHOD public String ChangeStrArray2Linear(String[] StrArray, String Suffix)
+    METHOD public String ChangeWindowsPath2CygwinPath(String OldPath)
+    METHOD public String ChangeWindowsPath2LinuxPath(String OldPath)
+    METHOD public String FindStringFromComboBox(ComboBox CmbCtrl, String SrcName, String TrimName = "", Boolean IsReverse = false)
+    METHOD public String FindStringFromListView(ListView LvCtrl, String SrcName, String TrimName = "")
+    METHOD public String GetAbsolutePath(String RelativePath)
+    METHOD public String GetDataGridCell(DataGridView dgv, Int32 RowCount, Int32 ColumnCount)
+    METHOD public String GetDropListLinear(DragEventArgs e)
+    METHOD public String GetIPAddress()
+    METHOD public String GetLsfLightHostName(String[] HostNameList, String DefaultHostName = "")
+    METHOD public String GetSelectListName(ListView ListViewCtrl, String RootPath = "", Int32 index = 0)
+    METHOD public String GetSelectName(ListBox ListBoxCtrl, String RootPath = "")
+    METHOD public String TrimDuplication(String Source, String Delimiter)
+    METHOD public String TrimEndGarbage(String Source)
+    METHOD public String[] AssortList(String[] Sources)
+    METHOD public String[] ChangeLinuxPath2WindowsPath(String[] OldPathArray)
+    METHOD public String[] ChangeStrLinear2Array(String StrLinear, String Delimiter, StringSplitOptions Opt = 1)
+    METHOD public String[] ChangeWindowsPath2LinuxPath(String[] OldPathArray)
+    METHOD public String[] GetComboBoxList(ComboBox ComboCtrl)
+    METHOD public String[] GetDropListArray(DragEventArgs e)
+    METHOD public String[] GetStrArrayFromListBox(SelectedObjectCollection ListBoxSelected)
+    METHOD public String[] GetStringArray(ComboBox CbCtrl)
+    METHOD public String[] GetSubDirFileList(String TopDirPath, String SubDirPath, String TargetFile)
+    METHOD public String[] List2Array(List<String> StringList)
+    METHOD public String[] RemoveStringArray(String[] Sources, String Remove)
+    METHOD public String[] TrimDuplication(String[] SourceArray)
+    METHOD public Void CopyToClipboard(KeyEventArgs e, ListBox ListBoxCtrl, String RootPath = "")
+    METHOD public Void CopyToClipboard(KeyEventArgs e, ListView ListViewCtrl, String RootPath = "", Int32 index = 0)
+    METHOD public Void ExecutePathWithWait(String Path, String Param = "", Boolean NoWindow = false)
+    METHOD public Void ModifyCombBoxList(ComboBox ComboCtrl)
+    METHOD public Void ProcessKill(String ProcessName)
+    METHOD public Void SelectAll(KeyEventArgs e)
+    METHOD public Void SelectAll(TextBox TextBoxCtrl, KeyEventArgs e)
+    METHOD public Void SetComboBoxFromArray(ComboBox ComboCtrl, String[] Array, String RemoveString = "", String LimitString = "")
+    METHOD public Void SetComboBoxFromArraySubString(ComboBox ComboCtrl, String[] Array, Int32 StartIdx, String EndDelimiter = "", String LimitString = "", Boolean IsReverse = false)
+    METHOD public Void SetComboBoxFromTextList(ref ComboBox ComboCtrl, String TextList, String RemoveString = "")
+    METHOD public Void SetComboBoxString(ref ComboBox CbCtrl, String[] StringArray)
+    METHOD public Void SetComboBoxText(ComboBox ComboCtrl, String DefaultProfileName)
+    METHOD public Void SetCurrentDirectory()
+    METHOD public Void SetDataGridCell(DataGridView dgv, Int32 RowCount, Int32 ColumnCount, String Val)
+    METHOD public Void SetDragFile(DragEventArgs e)
+    METHOD public Void UpdateProfileList(ref ComboBox ComboCtrl, String DefaultProfileName = "", String DirectoryPath = "", String FileExtension = "*.xml")
+
+TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
+    ENUM   LINUX_PATH = 2
+    ENUM   OTHER = 4
+    ENUM   PERFORCE_PATH = 1
+    ENUM   WINDOWS_FULLPATH = 0
+    ENUM   WINDOWS_PATH = 3
+
+# total: 13 types / 184 members

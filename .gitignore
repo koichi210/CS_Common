@@ -1,0 +1,15 @@
+# テストプロジェクトのビルド成果物
+Tests/**/bin/
+Tests/**/obj/
+
+# スナップショット比較に失敗したときの実測値。
+# 承認済みの ApiSnapshot.approved.txt だけをコミットする
+Tests/**/ApiSnapshot.received.txt
+
+# テスト実行ログ
+Tests/**/TestResults/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
