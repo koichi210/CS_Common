@@ -476,7 +476,16 @@ namespace StandardTemplate
                 if (NewPath.IndexOf(@"/cygdrive/") != -1)
                 {
                     NewPath = NewPath.Replace(@"/cygdrive/", @"");
-                    NewPath.Insert(1, @":");
+
+                    // ドライブレター1文字の直後にコロンを入れる。
+                    // String.Insert は元の文字列を書き換えず新しい文字列を返すので、必ず受け取る。
+                    if (NewPath.Length >= 1)
+                    {
+                        NewPath = NewPath.Insert(1, @":");
+                    }
+
+                    // ChangeWindowsPath2CygwinPath と対になるよう、区切りも Windows 形式へ戻す
+                    NewPath = ChangeLinuxPath2WindowsPath(NewPath);
                 }
             }
 
@@ -510,7 +519,10 @@ namespace StandardTemplate
         // 改行コードを変換[LF→CRLF]
         public String ChangeNewLineCodeLF2CRLF(String Source)
         {
-            String Dest = Source.Replace("\n", "\r\n");
+            // 単純に "\n" を "\r\n" に置換すると、すでに CRLF になっている箇所が
+            // "\r\r\n" に増えてしまう。いったん LF に統一してから変換することで、
+            // LF と CRLF が混在していても、何度呼んでも結果が変わらないようにする。
+            String Dest = Source.Replace("\r\n", "\n").Replace("\n", "\r\n");
             return Dest;
         }
 
@@ -546,18 +558,25 @@ namespace StandardTemplate
         // Linuxパス名を連結
         public String AppendLinuxPathName(String Path1, String Path2)
         {
-            String AppendPath = Path1;
+            // 以前は Substring(Path1.Length, 0) と Substring(0, 0) で判定していたが、
+            // どちらも常に空文字を返すため条件が必ず成立し、区切りを足し続けていた。
+            Boolean IsEndWithSlash = Path1.EndsWith("/");
+            Boolean IsStartWithSlash = Path2.StartsWith("/");
 
-            if (Path1.Substring(Path1.Length, 0) != "/")
+            // 両方にあるなら片方を落とす
+            if (IsEndWithSlash && IsStartWithSlash)
             {
-                if (Path2.Substring(0, 0) != "/")
-                {
-                    AppendPath += "/";
-                }
+                return Path1 + Path2.Substring(1);
             }
-            AppendPath += Path2;
 
-            return AppendPath;
+            // 両方に無いなら足す
+            if (!IsEndWithSlash && !IsStartWithSlash)
+            {
+                return Path1 + "/" + Path2;
+            }
+
+            // どちらか一方にあるなら、そのまま繋ぐ
+            return Path1 + Path2;
         }
 
         // 並びをアソート
@@ -594,6 +613,13 @@ namespace StandardTemplate
         // 特定の文字列を削除
         public String[] RemoveStringArray(String[] Sources, String Remove)
         {
+            // String.Replace は第1引数が空文字だと ArgumentException を投げる。
+            // 「何も削除しない」指定とみなして、そのまま返す。
+            if (Remove == String.Empty)
+            {
+                return Sources.ToArray();
+            }
+
             return Sources.Select(str => str.Replace(Remove, "")).ToArray();
         }
 
@@ -773,15 +799,12 @@ namespace StandardTemplate
             int FileNameidx = SrcDirName.IndexOf(":");
             if (0 <= FileNameidx)
             {
-                // (例) C: のようにドライブレターだけが指定された場合は、終端に"\"が必要
+                // (例) C: のようにドライブレターだけが指定された場合は、終端に"\"が必要。
+                // 以前は @":\" を足していたため "C::\" とコロンが二重になっていた。
                 if (DestDirName.Length == 2)
                 {
-                    DestDirName += @":\";
+                    DestDirName += @"\";
                 }
-            }
-            else
-            {
-                DestDirName = SrcDirName;
             }
 
             return DestDirName;
@@ -2130,8 +2153,19 @@ namespace StandardTemplate
         // 暗号化&複合化のメイン処理
         private String Encryption(String Word, Boolean IsEncode = true)
         {
-            // 文字列をbyte配列に変換
-            byte[] Source = Encoding.Unicode.GetBytes(Word);
+            // 暗号文は任意のバイト列になるため、有効な UTF-16 の並びになるとは限らない。
+            // 以前は暗号文も Encoding.Unicode で文字列にしていたので、UTF-16 として不正な
+            // 並びが置換文字に潰され、そこで情報が失われて復号できなくなっていた
+            // （日本語を入れると再現した）。暗号文の受け渡しには Base64 を使う。
+            byte[] Source;
+            if (IsEncode)
+            {
+                Source = Encoding.Unicode.GetBytes(Word);
+            }
+            else
+            {
+                Source = Convert.FromBase64String(Word);
+            }
 
             // Triple DESのサービスプロバイダを生成
             TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider();
@@ -2153,12 +2187,15 @@ namespace StandardTemplate
             cs.Write(Source, 0, Source.Length);
             cs.Close();
 
-            // 復号化されたデータをbyte配列で取得
-            byte[] cryptData = ms.ToArray();
+            byte[] Result = ms.ToArray();
             ms.Close();
 
-            // byte配列を文字列に変換して表示
-            return Encoding.Unicode.GetString(cryptData);
+            // 暗号化した結果は Base64 の文字列で返す。復号した結果は元の文字列に戻す。
+            if (IsEncode)
+            {
+                return Convert.ToBase64String(Result);
+            }
+            return Encoding.Unicode.GetString(Result);
         }
 
         // 暗号化witch鍵

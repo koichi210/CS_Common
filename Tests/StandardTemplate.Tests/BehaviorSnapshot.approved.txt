@@ -95,8 +95,8 @@
   ""               ->  ""
 
 ## StcUtils.ChangeCygwinPath2WindowsPath(String)
-  "/cygdrive/c/work/a.txt"  ->  "c/work/a.txt"
-  "/cygdrive/c"             ->  "c"
+  "/cygdrive/c/work/a.txt"  ->  "c:\work\a.txt"
+  "/cygdrive/c"             ->  "c:"
   "C:\work"                 ->  "C:\work"
   "/home/ogu"               ->  "/home/ogu"
   ""                        ->  ""
@@ -118,16 +118,16 @@
 
 ## StcUtils.AppendLinuxPathName(String Path1, String Path2)
   "a", "b"             ->  "a/b"
-  "a/", "b"            ->  "a//b"
-  "a", "/b"            ->  "a//b"
-  "a/", "/b"           ->  "a///b"
+  "a/", "b"            ->  "a/b"
+  "a", "/b"            ->  "a/b"
+  "a/", "/b"           ->  "a/b"
   "/home/ogu", "work"  ->  "/home/ogu/work"
   "", ""               ->  "/"
 
 ## StcUtils.ChangeNewLineCodeLF2CRLF(String) / ChangeNewLineCodeCRLF2LF(String)
   LF2CRLF "a\nb"    ->  "a\r\nb"
   CRLF2LF "a\nb"    ->  "a\nb"
-  LF2CRLF "a\r\nb"  ->  "a\r\r\nb"
+  LF2CRLF "a\r\nb"  ->  "a\r\nb"
   CRLF2LF "a\r\nb"  ->  "a\nb"
   LF2CRLF "a\rb"    ->  "a\rb"
   CRLF2LF "a\rb"    ->  "a\rb"
@@ -155,7 +155,7 @@
 
 ## StcUtils.RemoveStringArray(String[] Sources, String Remove)
   [abc, bcd, xyz], "b"  ->  ["ac", "cd", "xyz"] (3件)
-  [abc], ""             ->  !! ArgumentException
+  [abc], ""             ->  ["abc"] (1件)
   空配列, "b"              ->  [] (0件)
 
 ## StcUtils.Array2List(String[]) / List2Array(List<String>)
@@ -203,9 +203,9 @@
    # ":" を含むときだけ終端の \ を落とす。含まないときは入力をそのまま返す。
   "C:\work\"  ->  "C:\work"
   "C:\work"   ->  "C:\work"
-  "C:\"       ->  "C::\"
-  "C:"        ->  "C::\"
-  "work\"     ->  "work\"
+  "C:\"       ->  "C:\"
+  "C:"        ->  "C:\"
+  "work\"     ->  "work"
   "work"      ->  "work"
   ""          ->  ""
 
@@ -226,12 +226,12 @@
 
 ## StcSecure.Encode(String) / Decode(String)
    # 鍵と IV がソースに直書きされているため、同じ入力なら常に同じ結果になる。
-  Encode "hello"       ->  "ヽ喹⸼㊅暽코ഃ欠"
-  Encode "パスワード"       ->  "�傚쬬㏭쌧뽾븁㜎"
-  Encode ""            ->  "䄭괳㑂簩"
-  Encode "0123456789"  ->  "Ǆ綈睗妊貵屆䐾ﲢ㚖칽⹚棶"
+  Encode "hello"       ->  "/TC5VTwuhTK9ZlTPAw0gaw=="
+  Encode "パスワード"       ->  "MdqaUCzL7TMnw36/Ab4ONw=="
+  Encode ""            ->  "LUEzrUI0KXw="
+  Encode "0123456789"  ->  "xAGIfVd3ilm1jEZcPkSi/JY2fc5aLvZo"
   往復 "hello"           ->  "hello"
-  往復 "パスワード"           ->  "Ό灤䄉䉠ᔅ"
+  往復 "パスワード"           ->  "パスワード"
   往復 "0123456789"      ->  "0123456789"
 
 # total: 26 sections / 163 cases

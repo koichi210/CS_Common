@@ -61,7 +61,7 @@
     <Compile Include="BehaviorRecorder.cs" />
     <Compile Include="BehaviorSnapshotTests.cs" />
     <Compile Include="StcUtilsTests.cs" />
-    <Compile Include="KnownIssuesTests.cs" />
+    <Compile Include="FixedBugRegressionTests.cs" />
     <Compile Include="StcSaveRestoreTests.cs" />
   </ItemGroup>
   <ItemGroup>
