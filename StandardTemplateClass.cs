@@ -1987,39 +1987,43 @@ namespace StandardTemplate
 
         // コントロール保存 /////////////////////////////////////////
         // ファイル保存[TextBox]
+        /// <summary>
+        /// 登録済みコントロールを 1 つずつ、属性名・属性値・現在値の組で書き出す。
+        /// 種類による違いは「現在値をどう文字列にするか(GetValue)」だけ。
+        ///
+        /// 1 つのコントロールから複数行を書き出すもの（ComboBox の履歴一覧、CheckedListBox、
+        /// DataGridView）は内側にもループがあって形が違うので、ここには通していない。
+        /// 無理に共通化すると渡すデリゲートが増えてかえって読みにくくなるため。
+        /// </summary>
+        private void SaveRegisteredCtrl<T>(T[] RegisteredCtrl, Func<T, String> GetValue) where T : OriginDB
+        {
+            for (int i = 0; i < RegisteredCtrl.Length; i++)
+            {
+                SaveXmlString(RegisteredCtrl[i].AttrName, RegisteredCtrl[i].AttrValue, GetValue(RegisteredCtrl[i]));
+            }
+        }
+
         private void SaveTextCtrl()
         {
-            for (int i = 0; i < RegTextCtrl.Length; i++)
-            {
-                SaveXmlString(RegTextCtrl[i].AttrName, RegTextCtrl[i].AttrValue, RegTextCtrl[i].Ctrl.Text);
-            }
+            SaveRegisteredCtrl(RegTextCtrl, Ctrl => Ctrl.Ctrl.Text);
         }
 
         // ファイル保存[RadioButton]
         private void SaveRadioCtrl()
         {
-            for (int i = 0; i < RegRadioCtrl.Length; i++)
-            {
-                SaveXmlString(RegRadioCtrl[i].AttrName, RegRadioCtrl[i].AttrValue, RegRadioCtrl[i].Ctrl.Checked.ToString());
-            }
+            SaveRegisteredCtrl(RegRadioCtrl, Ctrl => Ctrl.Ctrl.Checked.ToString());
         }
 
         // ファイル保存[CheckBox]
         private void SaveCheckCtrl()
         {
-            for (int i = 0; i < RegCheckCtrl.Length; i++)
-            {
-                SaveXmlString(RegCheckCtrl[i].AttrName, RegCheckCtrl[i].AttrValue, RegCheckCtrl[i].Ctrl.Checked.ToString());
-            }
+            SaveRegisteredCtrl(RegCheckCtrl, Ctrl => Ctrl.Ctrl.Checked.ToString());
         }
 
         // ファイル保存[ComboBox]
         private void SaveComboCtrl()
         {
-            for (int i = 0; i < RegComboCtrl.Length; i++)
-            {
-                SaveXmlString(RegComboCtrl[i].AttrName, RegComboCtrl[i].AttrValue, RegComboCtrl[i].Ctrl.Text);
-            }
+            SaveRegisteredCtrl(RegComboCtrl, Ctrl => Ctrl.Ctrl.Text);
         }
 
         // ファイル保存[ComboBox]の中身
@@ -2078,10 +2082,7 @@ namespace StandardTemplate
         // ファイル保存[HScrollBar]
         private void SaveHScrollBarCtrl()
         {
-            for (int i = 0; i < RegHScrollBarCtrl.Length; i++)
-            {
-                SaveXmlString(RegHScrollBarCtrl[i].AttrName, RegHScrollBarCtrl[i].AttrValue, RegHScrollBarCtrl[i].Ctrl.Value.ToString());
-            }
+            SaveRegisteredCtrl(RegHScrollBarCtrl, Ctrl => Ctrl.Ctrl.Value.ToString());
         }
 
         // ファイル保存[暗号化キー]
