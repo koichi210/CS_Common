@@ -54,10 +54,70 @@ namespace StandardTemplate.Tests
             Assert.AreEqual(StcUtils.FILE_PATH_TYPE.OTHER, util.GetFilePathType("a.txt"));
         }
 
-        // TODO: 疎通確認が済んだら、以下を実測ベースで追加していく。
-        //   - GetNumber / GetNumberFromRear（範囲外 StartIdx、Length=0、ゼロ埋め、既定値 "01"）
-        //   - パス変換系（Windows <-> Cygwin <-> Linux）
-        //   - 文字列配列系（TrimDuplication / AssortList / RemoveStringArray）
-        //   - 改行コード変換（LF <-> CRLF）
+        // --- 性質ベースのテスト ---------------------------------------------
+        // 入出力を1件ずつ並べたものは BehaviorSnapshot に任せてある。
+        // ここには「毎回同じ値にならないので焼き付けられないもの」と、
+        // 「入力が変わっても常に成り立ってほしい関係」を書く。
+
+        [TestMethod]
+        public void AssortList_順番は変わっても要素の集合は変わらない()
+        {
+            // 実装が乱数（Guid）で並べ替えるため、結果を固定値と比較できない。
+            // 「何が返るか」ではなく「何が保たれるか」を確かめる。
+            string[] source = { "a", "b", "c", "d", "e" };
+
+            string[] actual = util.AssortList(source);
+
+            Assert.AreEqual(source.Length, actual.Length, "件数が変わってはいけない");
+            CollectionAssert.AreEquivalent(source, actual, "順序を無視すれば中身は同じはず");
+        }
+
+        [TestMethod]
+        public void AssortList_空配列を渡しても落ちない()
+        {
+            Assert.AreEqual(0, util.AssortList(new string[0]).Length);
+        }
+
+        [TestMethod]
+        public void TrimDuplication_二度かけても結果が変わらない()
+        {
+            // 重複除去は一度やれば十分で、繰り返しても安定していてほしい
+            string[] once = util.TrimDuplication(new[] { "a", "b", "a", "c", "b" });
+            string[] twice = util.TrimDuplication(once);
+
+            CollectionAssert.AreEqual(once, twice);
+        }
+
+        [TestMethod]
+        public void パス区切り変換_LinuxにしてからWindowsに戻すと元に戻る()
+        {
+            // ただし元の文字列に "/" が混ざっている場合は戻らない（区別が付かなくなるため）。
+            // ここでは "\" だけで構成されたパスに限って成り立つことを確認する。
+            string windowsPath = @"C:\work\sub\a.txt";
+
+            string roundTrip = util.ChangeLinuxPath2WindowsPath(util.ChangeWindowsPath2LinuxPath(windowsPath));
+
+            Assert.AreEqual(windowsPath, roundTrip);
+        }
+
+        [TestMethod]
+        public void 配列とリストを相互変換しても中身が変わらない()
+        {
+            string[] source = { "a", "b", "c" };
+
+            CollectionAssert.AreEqual(source, util.List2Array(util.Array2List(source)));
+        }
+
+        [TestMethod]
+        public void 文字列と配列を相互変換しても中身が変わらない()
+        {
+            // 区切り文字を含まない要素だけなら、連結して分割し直せば元に戻る
+            string[] source = { "a", "b", "c" };
+
+            string linear = util.ChangeStrArray2Linear(source, ",");
+            string[] roundTrip = util.ChangeStrLinear2Array(linear, ",");
+
+            CollectionAssert.AreEqual(source, roundTrip);
+        }
     }
 }

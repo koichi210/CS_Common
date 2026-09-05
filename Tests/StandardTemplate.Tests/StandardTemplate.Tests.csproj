@@ -55,13 +55,18 @@
     <Compile Include="..\..\StandardTemplateClass.cs">
       <Link>StandardTemplateClass.cs</Link>
     </Compile>
+    <Compile Include="SnapshotFile.cs" />
     <Compile Include="ApiSurface.cs" />
     <Compile Include="ApiSnapshotTests.cs" />
+    <Compile Include="BehaviorRecorder.cs" />
+    <Compile Include="BehaviorSnapshotTests.cs" />
     <Compile Include="StcUtilsTests.cs" />
+    <Compile Include="KnownIssuesTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- 承認済みスナップショット。テストはソースフォルダのこれを直接読むので出力へのコピーは不要 -->
     <None Include="ApiSnapshot.approved.txt" Condition="Exists('ApiSnapshot.approved.txt')" />
+    <None Include="BehaviorSnapshot.approved.txt" Condition="Exists('BehaviorSnapshot.approved.txt')" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

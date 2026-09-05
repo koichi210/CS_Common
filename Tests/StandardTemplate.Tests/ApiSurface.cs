@@ -49,13 +49,7 @@ namespace StandardTemplate.Tests
 
             sb.AppendLine(string.Format(CultureInfo.InvariantCulture,
                 "# total: {0} types / {1} members", types.Count, memberCount));
-            return Normalize(sb.ToString());
-        }
-
-        /// <summary>改行コードの違いで差分が出ないように正規化する。</summary>
-        public static string Normalize(string text)
-        {
-            return text.Replace("\r\n", "\n").Replace("\r", "\n").TrimEnd('\n') + "\n";
+            return sb.ToString();
         }
 
         /// <summary>アセンブリの外から到達できる型か（入れ子は親も辿る）。</summary>
