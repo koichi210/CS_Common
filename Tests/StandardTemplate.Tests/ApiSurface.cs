@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace StandardTemplate.Tests
@@ -14,6 +15,12 @@ namespace StandardTemplate.Tests
     /// 共通クラスを参照している 17 プロジェクトのビルドは壊れない（＝呼び出し側は無影響）。
     /// リファクタ前に生成した ApiSnapshot.approved.txt との diff がゼロであることを
     /// ApiSnapshotTests が検証する。
+    ///
+    /// ⚠️ internal も記録対象にしている。
+    /// この共通クラスは DLL ではなく &lt;Link&gt; でソース参照されるため、各プロジェクトの
+    /// アセンブリの一部としてコンパイルされる。つまり internal は実質 public と変わらない。
+    /// 実際 StcSaveRestore は internal だが 10 プロジェクトが継承して使っている。
+    /// private だけが本当に内部実装なので、そこだけ除外する。
     /// </summary>
     internal static class ApiSurface
     {
@@ -25,6 +32,7 @@ namespace StandardTemplate.Tests
 
             List<Type> types = asm.GetTypes()
                 .Where(t => t.Namespace == TargetNamespace)
+                .Where(t => !IsCompilerGenerated(t))
                 .Where(IsVisibleOutside)
                 .OrderBy(t => t.FullName, StringComparer.Ordinal)
                 .ToList();
@@ -52,23 +60,29 @@ namespace StandardTemplate.Tests
             return sb.ToString();
         }
 
-        /// <summary>アセンブリの外から到達できる型か（入れ子は親も辿る）。</summary>
+        /// <summary>
+        /// 他のコードから触れる型か（入れ子は親も辿る）。private な入れ子だけを除外する。
+        /// </summary>
         private static bool IsVisibleOutside(Type t)
         {
             if (!t.IsNested)
             {
-                return t.IsPublic;
+                // トップレベルの型は public か internal しかありえず、どちらも記録対象
+                return true;
             }
-            bool visible = t.IsNestedPublic || t.IsNestedFamily || t.IsNestedFamORAssem;
-            return visible && IsVisibleOutside(t.DeclaringType);
+            return !t.IsNestedPrivate && IsVisibleOutside(t.DeclaringType);
+        }
+
+        /// <summary>ラムダのクロージャなど、コンパイラが勝手に作る型やメンバーを弾く。</summary>
+        private static bool IsCompilerGenerated(MemberInfo m)
+        {
+            return m.IsDefined(typeof(CompilerGeneratedAttribute), false) || m.Name.IndexOf('<') >= 0;
         }
 
         private static string DescribeType(Type t)
         {
             var sb = new StringBuilder("TYPE ");
-
-            bool isPublic = t.IsNested ? t.IsNestedPublic : t.IsPublic;
-            sb.Append(isPublic ? "public " : t.IsNestedFamily ? "protected " : "protected internal ");
+            sb.Append(TypeAccess(t)).Append(' ');
 
             if (t.IsEnum)
             {
@@ -188,29 +202,46 @@ namespace StandardTemplate.Tests
             return lines;
         }
 
-        /// <summary>public か protected（＝派生クラスから触れる）ものだけを API とみなす。</summary>
+        /// <summary>
+        /// private 以外を API とみなす。&lt;Link&gt; のソース参照では internal も
+        /// 各プロジェクトから触れてしまうため、public と同じ扱いで記録する。
+        /// </summary>
         private static bool IsExposed(MethodBase m)
         {
-            return m.IsPublic || m.IsFamily || m.IsFamilyOrAssembly;
+            return !m.IsPrivate && !IsCompilerGenerated(m);
         }
 
         private static bool IsExposed(FieldInfo f)
         {
-            return f.IsPublic || f.IsFamily || f.IsFamilyOrAssembly;
+            return !f.IsPrivate && !IsCompilerGenerated(f);
+        }
+
+        private static string TypeAccess(Type t)
+        {
+            if (!t.IsNested) return t.IsPublic ? "public" : "internal";
+            if (t.IsNestedPublic) return "public";
+            if (t.IsNestedFamily) return "protected";
+            if (t.IsNestedFamORAssem) return "protected internal";
+            if (t.IsNestedAssembly) return "internal";
+            return "private";
         }
 
         private static string Access(MethodBase m)
         {
             if (m.IsPublic) return "public";
             if (m.IsFamily) return "protected";
-            return "protected internal";
+            if (m.IsFamilyOrAssembly) return "protected internal";
+            if (m.IsAssembly) return "internal";
+            return "private";
         }
 
         private static string Access(FieldInfo f)
         {
             if (f.IsPublic) return "public";
             if (f.IsFamily) return "protected";
-            return "protected internal";
+            if (f.IsFamilyOrAssembly) return "protected internal";
+            if (f.IsAssembly) return "internal";
+            return "private";
         }
 
         private static string Parameters(MethodBase m)

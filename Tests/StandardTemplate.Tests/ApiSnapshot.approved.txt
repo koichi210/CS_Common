@@ -49,6 +49,20 @@ TYPE public class StandardTemplate.StcCheck
     METHOD public Boolean IsExistRemoteProcFile(String BaseDir = "")
     METHOD public Boolean IsPossibleCygwinBin(String BinName = "")
 
+TYPE internal class StandardTemplate.StcCreateScript
+    CTOR   public StcCreateScript()
+    METHOD public String CommonHeader()
+    METHOD public String GetExecCmdWithExistFile(String FileName, String CommandName = "")
+    METHOD public String GetGrepWord(String GrepWord, String FileName, String OutputLine)
+    METHOD public String LocalScriptCp(String Src, String Dest)
+    METHOD public String LocalScriptDiff(String SrcFile, String DestFile)
+    METHOD public String LocalScriptSedDelete(String Target, String FileName)
+    METHOD public String LocalScriptSedInsert(String Target, String Add, String FileName)
+    METHOD public String LocalScriptSedReplace(String Src, String Dest, String FileName)
+    METHOD public String LocalScriptSedReplaceLine(String Src, String Dest, String FileName)
+    METHOD public String LocalScriptSedReplaceTargetLine(String Target, String Src, String Dest, String FileName)
+    METHOD public String LocalScriptShell(String Shell, String Param = "", Boolean IsBackGround = false)
+
 TYPE public class StandardTemplate.StcDebug
     CTOR   public StcDebug()
     CTOR   public StcDebug(Boolean IsMode)
@@ -72,7 +86,6 @@ TYPE public class StandardTemplate.StcDraw
     METHOD public Void FillBackground(Brush color)
     METHOD public Void SetPenColor(Brush color)
     METHOD public Void SetPenWidth(Int32 width)
-    PROP   public Bitmap canvas { public get; }
 
 TYPE public class StandardTemplate.StcException : Exception
     CTOR   protected StcException(SerializationInfo info, StreamingContext context)
@@ -118,12 +131,48 @@ TYPE public class StandardTemplate.StcImage
     CTOR   public StcImage()
     METHOD public Size GetImageSize(String FilePath)
 
+TYPE internal class StandardTemplate.StcSaveRestore
+    CTOR   public StcSaveRestore()
+    METHOD public Boolean CloseSaveXmlFile(String file_name)
+    METHOD public Boolean LoadXmlFile(String FileName)
+    METHOD public Boolean SaveXmlFile(String file_name, String version_no = "1")
+    METHOD public Int32 LoadXmlVersion(String FileName)
+    METHOD public Int32 LoadXmlVersion(XmlDocument document)
+    METHOD public String LoadXmlFile(String FileName, String AttrName, String AttrValue, String DefaultElement = "")
+    METHOD public String[] LoadXmlFileList(String FileName, String AttrName, String AttrValue)
+    METHOD public Void RegistCtrl(String AttrName, String AttrValue, CheckBox Ctrl, String ElementValue = "")
+    METHOD public Void RegistCtrl(String AttrName, String AttrValue, ComboBox Ctrl, String ElementValue = "")
+    METHOD public Void RegistCtrl(String AttrName, String AttrValue, HScrollBar Ctrl, Int32 ElementValue = 0)
+    METHOD public Void RegistCtrl(String AttrName, String AttrValue, RadioButton Ctrl, String ElementValue = "")
+    METHOD public Void RegistCtrl(String AttrName, String AttrValue, String AttrCountValue, DataGridView Ctrl, String ElementValue = "")
+    METHOD public Void RegistCtrl(String AttrName, String AttrValue, TextBox Ctrl, String ElementValue = "")
+    METHOD public Void RegistCtrlList(String AttrName, String AttrValue, CheckedListBox Ctrl, String ElementValue = "")
+    METHOD public Void RegistCtrlList(String AttrName, String AttrValue, ComboBox Ctrl, String ElementValue = "")
+    METHOD public Void RegistSecureCtrl(String AttrName, String AttrValue, TextBox Ctrl, String ElementValue = "")
+    METHOD public Void SaveXmlFile(XmlDocument document, String version_no = "1")
+    METHOD public Void SaveXmlManageParam(String AttrName, String AttrValue, Byte[] Value)
+    METHOD public Void SaveXmlParam(String AttrName, String AttrValue, Int32 Number)
+    METHOD public Void SaveXmlParamAll(String AttrName, String AttrValue, String[] StrArray)
+    METHOD public Void SaveXmlString(String AttrName, String AttrValue, String Text)
+    METHOD public Void SaveXmlString(String Element, String AttrName, String AttrValue, String Text)
+    METHOD public Void SaveXmlString(XmlDocument WriteDocument, XmlElement WriteRoot, String Element, String AttrName, String AttrValue, String Text)
+    METHOD public Void SetElement(String element)
+    METHOD public XmlDocument OpenSaveXmlFile()
+
 TYPE public class StandardTemplate.StcSecure
     CTOR   public StcSecure()
     METHOD public String Decode(String Word)
     METHOD public String Decode(String str, Byte[] DesKey, Byte[] DesIV, Byte[] cryptData)
     METHOD public String Encode(String Word)
     METHOD public String Encode(String str, out Byte[] DesKey, out Byte[] DesIV, out Byte[] cryptData)
+
+TYPE internal class StandardTemplate.StcSleep
+    CTOR   public StcSleep()
+    METHOD public Boolean StartSleep()
+    METHOD public Void SetSleepCycleMsec(UInt32 msec)
+    METHOD public Void SetSleepTimeMsec(UInt32 msec)
+    METHOD public Void SetSleepTimeSec(UInt32 sec)
+    METHOD public Void StopSleep()
 
 TYPE public class StandardTemplate.StcUtils
     CTOR   public StcUtils()
@@ -212,4 +261,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 13 types / 184 members
+# total: 16 types / 227 members
