@@ -1610,96 +1610,90 @@ namespace StandardTemplate
         }
 
         // 設定ファイル読み込み[TextCtrl]
-        private Boolean LoadTextCtrl(XmlElement element, String ElementValue)
+        /// <summary>
+        /// 登録済みコントロールの中から、この XML 要素に対応するものを探して値を反映する。
+        /// 見つけたら反映して true を返し、呼び出し元（LoadXmlFile）のループを次の要素へ進める。
+        ///
+        /// 種類ごとに同じ形の for ループが並んでいたのを 1 つにまとめたもの。
+        /// 種類による違いは「どう照合するか(IsMatch)」と「何を代入するか(Apply)」だけ。
+        /// </summary>
+        private Boolean LoadRegisteredCtrl<T>(T[] RegisteredCtrl, Func<T, Boolean> IsMatch, Action<T> Apply)
         {
-            for (int i = 0; i < RegTextCtrl.Length; i++)
+            for (int i = 0; i < RegisteredCtrl.Length; i++)
             {
-                if (RegTextCtrl[i].IsExistFullMatch(element))
+                if (IsMatch(RegisteredCtrl[i]))
                 {
-                    RegTextCtrl[i].Ctrl.Text = ElementValue;
+                    Apply(RegisteredCtrl[i]);
                     return true;
                 }
             }
             return false;
+        }
+
+        // 設定ファイル読み込み[TextBox]
+        private Boolean LoadTextCtrl(XmlElement element, String ElementValue)
+        {
+            return LoadRegisteredCtrl(RegTextCtrl,
+                Ctrl => Ctrl.IsExistFullMatch(element),
+                Ctrl => Ctrl.Ctrl.Text = ElementValue);
         }
 
         // 設定ファイル読み込み[RadioButton]
         private Boolean LoadRadioCtrl(XmlElement element, String ElementValue)
         {
-            for (int i = 0; i < RegRadioCtrl.Length; i++)
-            {
-                if (RegRadioCtrl[i].IsExistFullMatch(element))
-                {
-                    RegRadioCtrl[i].Ctrl.Checked = util.GetBoolean(ElementValue);
-                    return true;
-                }
-            }
-            return false;
+            return LoadRegisteredCtrl(RegRadioCtrl,
+                Ctrl => Ctrl.IsExistFullMatch(element),
+                Ctrl => Ctrl.Ctrl.Checked = util.GetBoolean(ElementValue));
         }
 
         // 設定ファイル読み込み[CheckBox]
         private Boolean LoadCheckCtrl(XmlElement element, String ElementValue)
         {
-            for (int i = 0; i < RegCheckCtrl.Length; i++)
-            {
-                if (RegCheckCtrl[i].IsExistFullMatch(element))
-                {
-                    RegCheckCtrl[i].Ctrl.Checked = util.GetBoolean(ElementValue);
-                    return true;
-                }
-            }
-            return false;
+            return LoadRegisteredCtrl(RegCheckCtrl,
+                Ctrl => Ctrl.IsExistFullMatch(element),
+                Ctrl => Ctrl.Ctrl.Checked = util.GetBoolean(ElementValue));
         }
 
+        // 設定ファイル読み込み[ComboBox]
         private Boolean LoadComboCtrl(XmlElement element, String ElementValue)
         {
-            for (int i = 0; i < RegComboCtrl.Length; i++)
-            {
-                if (RegComboCtrl[i].IsExistFullMatch(element))
-                {
-                    RegComboCtrl[i].Ctrl.Text = ElementValue;
-                    return true;
-                }
-            }
-            return false;
+            return LoadRegisteredCtrl(RegComboCtrl,
+                Ctrl => Ctrl.IsExistFullMatch(element),
+                Ctrl => Ctrl.Ctrl.Text = ElementValue);
         }
 
+        // 設定ファイル読み込み[ComboBoxの履歴一覧]
         private Boolean LoadComboCtrlList(XmlElement element, String ElementValue)
         {
-            for (int i = 0; i < RegComboCtrlList.Length; i++)
-            {
-                if (RegComboCtrlList[i].IsExistPartMatch(element))
-                {
-                    RegComboCtrlList[i].Ctrl.Items.Add(ElementValue);
-                    return true;
-                }
-            }
-            return false;
+            return LoadRegisteredCtrl(RegComboCtrlList,
+                Ctrl => Ctrl.IsExistPartMatch(element),
+                Ctrl => Ctrl.Ctrl.Items.Add(ElementValue));
         }
 
+        // 設定ファイル読み込み[CheckedListBox]
         private Boolean LoadCheckedListBoxCtrl(XmlElement element, String ElementValue)
         {
-            for (int i = 0; i < RegCheckedListBox.Length; i++)
-            {
-                if (RegCheckedListBox[i].IsExistPartMatch(element, RegCheckedListBox[i].AttrName, RegCheckedListBox[i].AttrValue + "-"))
+            // 属性値は "<AttrValue>-<項目名>" の形で入っているので、前半で照合して後半を項目名として使う
+            return LoadRegisteredCtrl(RegCheckedListBox,
+                Ctrl => Ctrl.IsExistPartMatch(element, Ctrl.AttrName, Ctrl.AttrValue + "-"),
+                Ctrl =>
                 {
-                    String attribute = element.GetAttribute(RegCheckedListBox[i].AttrName);
-                    int ItemNameIdx = RegCheckedListBox[i].AttrValue.Length + 1;
+                    String attribute = element.GetAttribute(Ctrl.AttrName);
+                    int ItemNameIdx = Ctrl.AttrValue.Length + 1;
 
                     // 名前
-                    RegCheckedListBox[i].Ctrl.Items.Add(attribute.Substring(ItemNameIdx));
+                    Ctrl.Ctrl.Items.Add(attribute.Substring(ItemNameIdx));
 
                     // 状態
                     Boolean IsChecked = util.GetBoolean(ElementValue, "Checked");
-                    RegCheckedListBox[i].Ctrl.SetItemChecked(RegCheckedListBox[i].Ctrl.Items.Count - 1, IsChecked);
-                    return true;
-                }
-            }
-            return false;
+                    Ctrl.Ctrl.SetItemChecked(Ctrl.Ctrl.Items.Count - 1, IsChecked);
+                });
         }
 
+        // 設定ファイル読み込み[DataGridView]
         private Boolean LoadDataGridCtrl(XmlElement element, String ElementValue)
         {
+            // ここだけは照合が 2 通り（セルの値と行数）あるので、まとめずに残してある
             for (int i = 0; i < RegDataGridCtrl.Length; i++)
             {
                 if (RegDataGridCtrl[i].IsExistPartMatch(element))
@@ -1720,15 +1714,9 @@ namespace StandardTemplate
         // 設定ファイル読み込み[HScrollBar]
         private Boolean LoadHScrollBarCtrl(XmlElement element, String ElementValue)
         {
-            for (int i = 0; i < RegHScrollBarCtrl.Length; i++)
-            {
-                if (RegHScrollBarCtrl[i].IsExistFullMatch(element))
-                {
-                    RegHScrollBarCtrl[i].Ctrl.Value = int.Parse(ElementValue);
-                    return true;
-                }
-            }
-            return false;
+            return LoadRegisteredCtrl(RegHScrollBarCtrl,
+                Ctrl => Ctrl.IsExistFullMatch(element),
+                Ctrl => Ctrl.Ctrl.Value = int.Parse(ElementValue));
         }
 
         // 設定ファイル読み込み[CheckedListBox]

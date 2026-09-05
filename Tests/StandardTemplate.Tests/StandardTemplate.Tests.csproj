@@ -62,6 +62,7 @@
     <Compile Include="BehaviorSnapshotTests.cs" />
     <Compile Include="StcUtilsTests.cs" />
     <Compile Include="KnownIssuesTests.cs" />
+    <Compile Include="StcSaveRestoreTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- 承認済みスナップショット。テストはソースフォルダのこれを直接読むので出力へのコピーは不要 -->
