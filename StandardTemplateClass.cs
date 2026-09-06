@@ -501,7 +501,7 @@ namespace StandardTemplate
         // パス区切りを変換[\ → /]
         public String[] ChangeWindowsPath2LinuxPath(String[] OldPathArray)
         {
-            return OldPathArray.Select(str => str.Replace(@"\", @"/")).ToArray();
+            return OldPathArray.Select(str => ChangeWindowsPath2LinuxPath(str)).ToArray();
         }
 
         // パス区切りを変換[/ → \]
@@ -513,7 +513,7 @@ namespace StandardTemplate
         // パス区切りを変換[/ → \]
         public String[] ChangeLinuxPath2WindowsPath(String[] OldPathArray)
         {
-            return OldPathArray.Select(str => str.Replace(@"/", @"\")).ToArray();
+            return OldPathArray.Select(str => ChangeLinuxPath2WindowsPath(str)).ToArray();
         }
 
         // 改行コードを変換[LF→CRLF]
