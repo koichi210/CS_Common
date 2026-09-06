@@ -2312,33 +2312,15 @@ namespace StandardTemplate
                 return false;
             }
 
-            // TODO：本関数を汎用的かつシンプルにしたい
-            Byte[] dat = new Byte[] { };
-            Stream sr = null;
-            Stream sw = null;
-            BinaryReader br = null;
-            BinaryWriter bw = null;
+            // 以前はStream/BinaryReader/BinaryWriterを手動で開閉していた(しかもClose()を
+            // 2回ずつ呼ぶ無駄もあった)。File.ReadAllBytes/WriteAllBytesに置き換えて
+            // シンプルにした。挙動(EUC-JPとして読んでSHIFT-JISのバイト列で書き出す)は
+            // 変えていない。
+            Byte[] SourceBytes = File.ReadAllBytes(InFileName);
+            String Text = Encoding.GetEncoding("EUC-JP").GetString(SourceBytes);
+            Byte[] DestBytes = Encoding.GetEncoding("SHIFT-JIS").GetBytes(Text);
 
-            // 入力ファイルをバイナリ形式で入力
-            sr = File.Open(InFileName, FileMode.Open, FileAccess.Read);
-            br = new BinaryReader(sr);
-            Array.Resize<Byte>(ref dat, (int)sr.Length);
-            dat = br.ReadBytes((int)sr.Length);
-            br.Close();
-            sr.Close();
-
-            String uni;
-            uni = System.Text.Encoding.GetEncoding("EUC-JP").GetString(dat);
-            dat = System.Text.Encoding.GetEncoding("SHIFT-JIS").GetBytes(uni);
-
-            sw = File.Open(OutFileName, FileMode.Create, FileAccess.Write);
-            bw = new BinaryWriter(sw);
-            bw.Write(dat);
-
-            bw.Close();
-            sw.Close();
-            br.Close();
-            sr.Close();
+            File.WriteAllBytes(OutFileName, DestBytes);
 
             return true;
         }
