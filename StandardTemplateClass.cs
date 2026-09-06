@@ -1559,17 +1559,20 @@ namespace StandardTemplate
                 return false;
             }
 
+            // 同じファイルをLoadSecureCodeと設定値読み込みでそれぞれ個別にXmlDocument.Load
+            // していたため、ファイルI/OとXMLパースが2回走っていた。1回読み込んだ
+            // XmlDocumentを両方で使い回すことで1回にまとめる。
+            XmlDocument document = new XmlDocument();
+            document.Load(FileName);
+
             // 管理情報は先に読む
             Boolean UseSecure = UseSecureCtrl();
             if (UseSecure)
             {
-                LoadSecureCode(FileName);
+                LoadSecureCode(document);
             }
 
             // 設定値を読む
-            XmlDocument document = new XmlDocument();
-            document.Load(FileName);
-
             foreach (XmlElement element in document.DocumentElement)
             {
                 String ElementValue = element.InnerText;
@@ -1813,11 +1816,8 @@ namespace StandardTemplate
             return true;
         }
 
-        private void LoadSecureCode(String FileName)
+        private void LoadSecureCode(XmlDocument document)
         {
-            XmlDocument document = new XmlDocument();
-            document.Load(FileName);
-
             foreach (XmlElement element in document.DocumentElement)
             {
                 String ElementValue = element.InnerText;
