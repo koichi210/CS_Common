@@ -17,6 +17,14 @@ namespace StandardTemplate
 {
     public class StcUtils // ユーティリティ系 ***************************************************
     {
+        // StcUtilsは元々どんな処理も無節操に詰め込んだ「何でも屋」クラスで、性質の違う
+        // 責務(パス変換・プロセス実行・存在チェック・WinFormsコントロール操作等)が
+        // 1クラスに同居していて見通しが悪かった。クラスを物理的に分割すると17プロジェクトの
+        // csprojすべてに新規ファイルの<Link>追加が必要になり影響範囲が大きいため、
+        // まずは既存のセクション区切りコメントを#regionに変えて、責務ごとに折りたためる
+        // ようにするだけに留めた(公開APIも挙動も一切変えていない)。
+
+        #region 初期化・パス種別判定
         public enum FILE_PATH_TYPE
         {
             WINDOWS_FULLPATH,
@@ -60,6 +68,9 @@ namespace StandardTemplate
             return PathType;
         }
 
+        #endregion
+
+        #region プロセス実行
         // プロセス -----------------------------------------
         // プロセス実行
         public Process ExecuteProcess(String ExecPath, Boolean NoWindow)
@@ -149,6 +160,9 @@ namespace StandardTemplate
             return IsStarting;
         }
 
+        #endregion
+
+        #region 存在チェック・ファイル実行
         // Explorer系 -----------------------------------------
         // ファイルパスが存在するかチェック[環境変数のPathを考慮]
         public Boolean IsExistFileNameInEnvironment(String FileName = "")
@@ -339,6 +353,9 @@ namespace StandardTemplate
             return true;
         }
 
+        #endregion
+
+        #region 数値・文字列・パス変換
         // 数値or文字列操作 -----------------------------------
         public int GetInteger(String Text)
         {
@@ -673,6 +690,9 @@ namespace StandardTemplate
             return sz;
         }
 
+        #endregion
+
+        #region WinFormsコントロール操作(ComboBox/ListBox/ListView/DataGridView/D&D)
         //----------------------------------------------------------
         // コントロール操作 ------------------------------------------
         // テキストコントロールの中身を全て選択
@@ -1191,6 +1211,7 @@ namespace StandardTemplate
             String[] DropList = GetDropListArray(e);
             return ChangeStrArray2Linear(DropList, Environment.NewLine);
         }
+        #endregion
     }
 
     // *******************************************************************************
