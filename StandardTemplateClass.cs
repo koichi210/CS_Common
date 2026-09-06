@@ -736,20 +736,23 @@ namespace StandardTemplate
         // 重複を削除
         public String[] TrimDuplication(String[] SourceArray)
         {
-            System.Collections.ArrayList al = new System.Collections.ArrayList(SourceArray.Length);
+            // ArrayList.Containsは毎回先頭から線形探索するため、要素数が多いとO(n^2)で遅くなる。
+            // HashSetなら追加済みかの判定がO(1)になるため、順序を保ったままO(n)で重複除去できる。
+            HashSet<String> seen = new HashSet<String>();
+            List<String> result = new List<String>(SourceArray.Length);
 
             //基になる配列の要素を列挙する
             foreach (String i in SourceArray)
             {
                 //コレクション内に存在していなければ、追加する
-                if (!al.Contains(i))
+                if (seen.Add(i))
                 {
-                    al.Add(i);
+                    result.Add(i);
                 }
             }
 
             //配列に変換する
-            return (String[])al.ToArray(typeof(String));
+            return result.ToArray();
         }
 
         public String[] GetStringArray(ComboBox CbCtrl)
