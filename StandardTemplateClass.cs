@@ -801,38 +801,32 @@ namespace StandardTemplate
 
         public String GetSelectName(ListBox ListBoxCtrl, String RootPath = "")
         {
-            String TargetName = "";
+            StringBuilder TargetName = new StringBuilder();
             for (int i = 0; i < ListBoxCtrl.SelectedItems.Count; i++)
             {
-                String AddName = "";
                 if (RootPath != String.Empty)
                 {
-                    AddName = RootPath + @"\";
+                    TargetName.Append(RootPath).Append(@"\");
                 }
-                AddName += ListBoxCtrl.SelectedItems[i].ToString() + Environment.NewLine;
-
-                TargetName += AddName;
+                TargetName.Append(ListBoxCtrl.SelectedItems[i].ToString()).Append(Environment.NewLine);
             }
 
-            return TargetName;
+            return TargetName.ToString();
         }
 
         public String GetSelectListName(ListView ListViewCtrl, String RootPath = "", int index = 0)
         {
-            String TargetName = "";
+            StringBuilder TargetName = new StringBuilder();
             for (int i = 0; i < ListViewCtrl.SelectedItems.Count; i++)
             {
-                String AddName = "";
                 if (RootPath != String.Empty)
                 {
-                    AddName = RootPath + @"\";
+                    TargetName.Append(RootPath).Append(@"\");
                 }
-                AddName += ListViewCtrl.SelectedItems[i].SubItems[index].Text + Environment.NewLine;
-
-                TargetName += AddName;
+                TargetName.Append(ListViewCtrl.SelectedItems[i].SubItems[index].Text).Append(Environment.NewLine);
             }
 
-            return TargetName;
+            return TargetName.ToString();
         }
 
         // リストボックスの選択項目をコピー
@@ -866,14 +860,14 @@ namespace StandardTemplate
         public String[] GetStrArrayFromListBox(ListBox.SelectedObjectCollection ListBoxSelected)
         {
             // TODO ListBoxの値を配列で取得したい
-            String Str = "";
+            StringBuilder Str = new StringBuilder();
             foreach (object Item in ListBoxSelected)
             {
-                Str = Str + Item.ToString() + Environment.NewLine;
+                Str.Append(Item.ToString()).Append(Environment.NewLine);
             }
 
             char[] TrimChar = { '\r', '\n' };
-            String[] StrArray = Str.TrimEnd(TrimChar).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            String[] StrArray = Str.ToString().TrimEnd(TrimChar).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
 
             return StrArray;
         }
@@ -889,12 +883,12 @@ namespace StandardTemplate
         // コンボボックスの選択肢を文字列の配列で取得
         public String[] GetComboBoxList(ComboBox ComboCtrl)
         {
-            String ComboBoxStr = "";
+            StringBuilder ComboBoxStr = new StringBuilder();
             for (int i = 0; i < ComboCtrl.Items.Count; i++)
             {
-                ComboBoxStr += ComboCtrl.Items[i].ToString() + Environment.NewLine;
+                ComboBoxStr.Append(ComboCtrl.Items[i].ToString()).Append(Environment.NewLine);
             }
-            return ComboBoxStr.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            return ComboBoxStr.ToString().Split(new[] { Environment.NewLine }, StringSplitOptions.None);
         }
 
         // プロファイルをコンボボックスにリストアップ
@@ -1122,15 +1116,15 @@ namespace StandardTemplate
             {
                 String[] fileName = (String[])e.Data.GetData(DataFormats.FileDrop, false);
 
-                if (IsClear)
-                {
-                    TextCtrl.Text = "";
-                }
+                // TextBox.Textへ毎回書き込むとその都度コントロールの再描画が走るため、
+                // StringBuilderに溜めてから最後に1回だけ書き込む。
+                StringBuilder TextBuilder = new StringBuilder(IsClear ? "" : TextCtrl.Text);
 
                 for (int i = 0; i < fileName.Length; i++)
                 {
-                    TextCtrl.Text += fileName[i] + Environment.NewLine;
+                    TextBuilder.Append(fileName[i]).Append(Environment.NewLine);
                 }
+                TextCtrl.Text = TextBuilder.ToString();
                 IsApply = true;
             }
 
