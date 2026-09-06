@@ -9,6 +9,7 @@ TYPE public class StandardTemplate.CaptWindow
     FIELD  public Boolean IsRestoreMousePos
     FIELD  public Boolean IsStopRequest
     FIELD  public CAPTURE_TARGET CaptureTarget
+    FIELD  public Control TargetWindow
     FIELD  public Int32 FileIdx
     FIELD  public MOUSE_EVENT MouseEvent
     FIELD  public Point MousePt
@@ -266,4 +267,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 17 types / 230 members
+# total: 17 types / 231 members

@@ -3059,6 +3059,11 @@ namespace StandardTemplate
         public TimeSpan SleepTimeMsec;    // Sleepする時間
         public TimeSpan SleepCycleMsec;   // Sleepを刻む感覚
 
+        // CAPTURE_TARGET.CURRENT_SCREEN で「このコントロール(通常は呼び出し元のForm)が
+        // 今表示されているモニタ」を判定するために使う。設定されていなければ
+        // Screen.PrimaryScreen(メイン画面)にフォールバックする。
+        public Control TargetWindow;
+
         private String ErrorLog;
         public CaptWindow()
         {
@@ -3261,33 +3266,20 @@ namespace StandardTemplate
 
         private Boolean SaveWithCaptureCurrentScreen(String PictFileName)
         {
-            // 全モニタの位置・サイズから、仮想デスクトップ全体の外接矩形(bounding box)を求める。
-            // 以前は各画面の幅・高さを単純に合計してキャンバスサイズにしていたため、
-            // モニタの配置やサイズの組み合わせによっては正しい範囲にならなかった
-            // (「画面配置によっては期待動作しない」というTODOで自覚されていた不具合)。
-            // 例えばモニタが横に並んでいれば幅は合計で合っていても、縦位置がずれている
-            // 配置では高さの合計が実際の必要範囲と一致しない、といったケースがあった。
-            int MinX = int.MaxValue;
-            int MinY = int.MaxValue;
-            int MaxX = int.MinValue;
-            int MaxY = int.MinValue;
+            // 「CURRENT_SCREEN」という名前なのに、以前は全モニタをまとめた1枚を作っていた
+            // (バグ修正前は範囲計算自体も間違っていたが、直しても「全画面結合」という
+            // 設計そのものがFULL_SCREEN(Ctrl+PrintScreenで撮る画面全体=全モニタ結合と
+            // ほぼ同じ結果)と機能が重複していた)。名前の通り「呼び出し元のウィンドウが
+            // 今表示されているモニタ1枚だけ」を撮るように直した。
+            Screen TargetScreen = (TargetWindow != null) ? Screen.FromControl(TargetWindow) : Screen.PrimaryScreen;
 
-            foreach (Screen ScreenInfo in Screen.AllScreens)
-            {
-                MinX = Math.Min(MinX, ScreenInfo.Bounds.X);
-                MinY = Math.Min(MinY, ScreenInfo.Bounds.Y);
-                MaxX = Math.Max(MaxX, ScreenInfo.Bounds.X + ScreenInfo.Bounds.Width);
-                MaxY = Math.Max(MaxY, ScreenInfo.Bounds.Y + ScreenInfo.Bounds.Height);
-            }
-
-            Bitmap bmp = new Bitmap(MaxX - MinX, MaxY - MinY);
+            Bitmap bmp = new Bitmap(TargetScreen.Bounds.Width, TargetScreen.Bounds.Height);
 
             //Graphicsの作成
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                // コピー元は仮想デスクトップ全体の左上(MinX, MinY)から、
-                // コピー先はビットマップの左上(0, 0)から。
-                g.CopyFromScreen(new Point(MinX, MinY), new Point(0, 0), bmp.Size);
+                //対象モニタの左上座標からコピーする
+                g.CopyFromScreen(TargetScreen.Bounds.Location, new Point(0, 0), bmp.Size);
 
                 //解放
                 g.Dispose();
