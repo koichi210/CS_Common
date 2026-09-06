@@ -1519,6 +1519,33 @@ namespace StandardTemplate
             }
         }
 
+        // ファイル名が空でなければ LoadXmlFile を実行する。
+        //
+        // 多くのプロジェクトの SaveRestore.cs（StcSaveRestore の派生クラス）で
+        // 「ファイル名が空なら false を返して何もしない、そうでなければ LoadXmlFile を呼ぶ」
+        // という同じ形の LoadProc がコピペされていたので、ここに集約した。
+        // Parent の状態を使った追加処理（デフォルト値の設定など）が必要なプロジェクトは、
+        // このメソッドと同名の LoadProc(string, Parent) を派生クラス側に定義すればよい
+        // （C# のメソッド隠蔽により、そちらが優先して呼ばれる）。
+        public Boolean LoadProc(String LoadFileName)
+        {
+            if (LoadFileName == String.Empty)
+            {
+                return false;
+            }
+            return LoadXmlFile(LoadFileName);
+        }
+
+        // ファイル名が空でなければ SaveXmlFile を実行する。LoadProc と対になる形。
+        public Boolean SaveSetting(String SaveFileName)
+        {
+            if (SaveFileName == String.Empty)
+            {
+                return false;
+            }
+            return SaveXmlFile(SaveFileName);
+        }
+
         // コントロール読み込み[一括]
         public Boolean LoadXmlFile(String FileName)
         {

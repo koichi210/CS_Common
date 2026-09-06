@@ -133,7 +133,9 @@ TYPE public class StandardTemplate.StcImage
 TYPE internal class StandardTemplate.StcSaveRestore
     CTOR   public StcSaveRestore()
     METHOD public Boolean CloseSaveXmlFile(String file_name)
+    METHOD public Boolean LoadProc(String LoadFileName)
     METHOD public Boolean LoadXmlFile(String FileName)
+    METHOD public Boolean SaveSetting(String SaveFileName)
     METHOD public Boolean SaveXmlFile(String file_name, String version_no = "1")
     METHOD public Int32 LoadXmlVersion(String FileName)
     METHOD public Int32 LoadXmlVersion(XmlDocument document)
@@ -260,4 +262,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 16 types / 226 members
+# total: 16 types / 228 members
