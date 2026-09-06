@@ -348,12 +348,42 @@ namespace StandardTemplate
                 return false;
             }
 
-            //TODO：参照関係を直したい。UtilからFileIOは参照しない。
-            StcFileInputOutput FileIO = new StcFileInputOutput();
-            FileIO.RemoveReadonlyAttribute(ExecPath);
+            RemoveReadonlyAttribute(ExecPath);
             ExecutePath(ExecPath);
 
             return true;
+        }
+
+        // 読み取り属性解除。以前はStcFileInputOutputをここでnewして使っており、
+        // UtilからFileIOへ依存する逆向きの参照になっていた(TODOコメントで指摘されていた)。
+        // 実体をこちらへ移し、StcFileInputOutput.RemoveReadonlyAttribute(String)からは
+        // このメソッドへ委譲する形にして、依存の向き(StcFileInputOutput→StcUtils)を揃えた。
+        public Boolean RemoveReadonlyAttribute(String FileName)
+        {
+            FileInfo fi = new FileInfo(FileName);
+            if (!fi.Exists)
+            {
+                // ファイルが無い
+                MessageBox.Show("指定されたパスが存在しません。");
+                return false;
+            }
+
+            if ((fi.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+            {
+                DialogResult DlgResult = MessageBox.Show(
+                    "読み取り専用属性を解除しますか？" + Environment.NewLine + FileName,
+                    "Infomation",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+
+                if (DlgResult == DialogResult.Yes)
+                {
+                    // 読み取り専用属性を解除する
+                    fi.Attributes = FileAttributes.Normal;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         #endregion
@@ -2450,32 +2480,12 @@ namespace StandardTemplate
         }
 
         // 読み取り属性解除
+        // 実体はStcUtils側に移した(ExecuteFileSupportReadOnlyがUtilからFileIOを参照する
+        // 逆向きの依存になっていたのを解消するため)。StcFileInputOutputは元々utilsフィールド
+        // 経由でStcUtilsに依存する側なので、そちらへ委譲する形にして依存の向きを揃えた。
         public Boolean RemoveReadonlyAttribute(String FileName)
         {
-            FileInfo fi = new FileInfo(FileName);
-            if (!fi.Exists)
-            {
-                // ファイルが無い
-                MessageBox.Show("指定されたパスが存在しません。");
-                return false;
-            }
-
-            if ((fi.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
-            {
-                DialogResult DlgResult = MessageBox.Show(
-                    "読み取り専用属性を解除しますか？" + Environment.NewLine + FileName,
-                    "Infomation",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-
-                if (DlgResult == DialogResult.Yes)
-                {
-                    // 読み取り専用属性を解除する
-                    fi.Attributes = FileAttributes.Normal;
-                    return true;
-                }
-            }
-
-            return false;
+            return utils.RemoveReadonlyAttribute(FileName);
         }
 
         // 読み取り属性解除

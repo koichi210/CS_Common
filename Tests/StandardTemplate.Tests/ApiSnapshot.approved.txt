@@ -197,6 +197,7 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public Boolean IsKeyPressNumber(KeyPressEventArgs e)
     METHOD public Boolean IsStartingProcess(String ProcessName, String MachineName = "")
     METHOD public Boolean IsWindowsPath(String Path)
+    METHOD public Boolean RemoveReadonlyAttribute(String FileName)
     METHOD public FILE_PATH_TYPE GetFilePathType(String FilePath)
     METHOD public Int32 GetInteger(String Text)
     METHOD public Int64 GetNumber(String SrcString, Int32 DefaultDigitNum = 1)
@@ -266,4 +267,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 17 types / 230 members
+# total: 17 types / 231 members
