@@ -43,6 +43,12 @@ TYPE public enum StandardTemplate.CaptWindow+MOUSE_EVENT
     ENUM   LEFT_UP = 3
     ENUM   MOVE = 0
 
+TYPE internal abstract class StandardTemplate.StcBaseForm`1 : Form
+    CTOR   protected StcBaseForm`1()
+    FIELD  protected StcUtils util
+    FIELD  protected TSaveRestore sr
+    METHOD protected Void InitializeCommonSettings(Icon FormIcon, String SettingFileName)
+
 TYPE public class StandardTemplate.StcCheck
     CTOR   public StcCheck()
     METHOD public Boolean IsExistCygwinDir(String CygwinDir = "")
@@ -262,4 +268,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 16 types / 228 members
+# total: 17 types / 232 members
