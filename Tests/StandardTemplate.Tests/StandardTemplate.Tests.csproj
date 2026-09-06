@@ -63,6 +63,7 @@
     <Compile Include="StcUtilsTests.cs" />
     <Compile Include="FixedBugRegressionTests.cs" />
     <Compile Include="StcSaveRestoreTests.cs" />
+    <Compile Include="StcFileInputOutputTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- 承認済みスナップショット。テストはソースフォルダのこれを直接読むので出力へのコピーは不要 -->
