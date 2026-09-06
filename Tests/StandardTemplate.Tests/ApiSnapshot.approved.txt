@@ -47,7 +47,7 @@ TYPE internal abstract class StandardTemplate.StcBaseForm`1 : Form
     CTOR   protected StcBaseForm`1()
     FIELD  protected StcUtils util
     FIELD  protected TSaveRestore sr
-    METHOD protected Void InitializeCommonSettings(Icon FormIcon, String SettingFileName)
+    METHOD protected Void InitializeCommonSettings(Icon FormIcon)
 
 TYPE public class StandardTemplate.StcCheck
     CTOR   public StcCheck()

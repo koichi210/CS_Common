@@ -2129,29 +2129,30 @@ namespace StandardTemplate
     }
 
     // *******************************************************************************
-    // Form1コンストラクタの定型処理(アイコン設定/カレントディレクトリ移動/設定ファイル読込)を
-    // まとめた共通基底クラス。各プロジェクトのForm1は
-    //   public partial class Form1 : StcBaseForm<SaveRestore>
+    // Form1コンストラクタの定型処理(アイコン設定/カレントディレクトリ移動)をまとめた
+    // 共通基底クラス。各プロジェクトのForm1は
+    //   partial class Form1 : StcBaseForm<SaveRestore>
     // のように継承し、util/srフィールドはこちら側の物をそのまま使う。
     //
     // TSaveRestoreは各プロジェクト固有の"class SaveRestore : StcSaveRestore"を渡す想定。
-    // RegistItem(Form1 Parent)は各プロジェクトのForm1型を直接引数に取る作りで
-    // ジェネリックの型引数からは呼べないため、あえてこの基底クラスには含めていない
-    // （呼び出し側のForm1コンストラクタで今まで通り sr.RegistItem(this) と書く）。
+    //
+    // ここにまとめたのは「アイコン設定→カレントディレクトリ移動」の2行だけ。
+    // RegistItem(Form1 Parent)はプロジェクト固有のForm1型を直接引数に取るためジェネリック
+    // からは呼べない。LoadProc/SaveSettingもFFEdit等の一部プロジェクトでは
+    // (String, Form1)の2引数オーバーロードに副作用付きで差し替えられており、
+    // 基底クラス側で1引数版を固定で呼んでしまうと差し替え版が呼ばれず挙動が変わってしまう。
+    // そのためRegistItem/LoadProc/SaveSettingの呼び出しは今まで通り各Form1コンストラクタに
+    // 明示的に書く方針とし、プロジェクトによらず完全に同一だった2行だけを集約している。
     abstract class StcBaseForm<TSaveRestore> : Form
         where TSaveRestore : StcSaveRestore, new()
     {
         protected StcUtils util = new StcUtils();
         protected TSaveRestore sr = new TSaveRestore();
 
-        // アイコン設定・カレントディレクトリ移動・設定ファイル読込をまとめて行う。
-        // 呼び出し順はどのプロジェクトも同じだった(Icon→カレントディレクトリ→Load)ため、
-        // その順序も含めて再現している。
-        protected void InitializeCommonSettings(Icon FormIcon, String SettingFileName)
+        protected void InitializeCommonSettings(Icon FormIcon)
         {
             this.Icon = FormIcon;
             util.SetCurrentDirectory();
-            sr.LoadProc(SettingFileName);
         }
     }
 
