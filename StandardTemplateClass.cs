@@ -3026,6 +3026,32 @@ namespace StandardTemplate
         const int MOUSEEVENTF_LEFTDOWN = 0x0002;    // 左ボタン Down
         const int MOUSEEVENTF_LEFTUP = 0x0004;      // 左ボタン Up
         const int MOUSEEVENTF_ABSOLUTE = 0x8000;    // 絶対値指定
+
+        // モニタの「物理ピクセル」での位置とサイズを取得するために使う。
+        // Screen.Boundsはアプリから見た論理サイズ(Windowsの表示倍率で割った値)を返すのに対し、
+        // Graphics.CopyFromScreenは物理ピクセル単位でコピーするため、表示倍率が100%以外の
+        // モニタでは「論理サイズ分しか撮れない=右端と下端が欠ける」というズレが起きる。
+        // 例: 3840x2160を150%表示 → Screen.Boundsは2560x1440を返すが、実際の画面は3840x2160。
+        [DllImport("user32.dll", CharSet = CharSet.Ansi)]
+        private static extern bool EnumDisplaySettingsA(String DeviceName, int ModeNum, ref DEVMODE DevMode);
+
+        private const int ENUM_CURRENT_SETTINGS = -1;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        private struct DEVMODE
+        {
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public String dmDeviceName;
+            public short dmSpecVersion, dmDriverVersion, dmSize, dmDriverExtra;
+            public int dmFields;
+            public int dmPositionX, dmPositionY;
+            public int dmDisplayOrientation, dmDisplayFixedOutput;
+            public short dmColor, dmDuplex, dmYResolution, dmTTOption, dmCollate;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public String dmFormName;
+            public short dmLogPixels;
+            public int dmBitsPerPel, dmPelsWidth, dmPelsHeight, dmDisplayFlags, dmDisplayFrequency;
+            public int dmICMMethod, dmICMIntent, dmMediaType, dmDitherType;
+            public int dmReserved1, dmReserved2, dmPanningWidth, dmPanningHeight;
+        }
         ///////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -3273,13 +3299,16 @@ namespace StandardTemplate
             // 今表示されているモニタ1枚だけ」を撮るように直した。
             Screen TargetScreen = (TargetWindow != null) ? Screen.FromControl(TargetWindow) : Screen.PrimaryScreen;
 
-            Bitmap bmp = new Bitmap(TargetScreen.Bounds.Width, TargetScreen.Bounds.Height);
+            // Screen.Boundsではなく物理ピクセルでの範囲を使う(表示倍率が100%以外のモニタ対策)
+            Rectangle CaptureArea = GetPhysicalBounds(TargetScreen);
+
+            Bitmap bmp = new Bitmap(CaptureArea.Width, CaptureArea.Height);
 
             //Graphicsの作成
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 //対象モニタの左上座標からコピーする
-                g.CopyFromScreen(TargetScreen.Bounds.Location, new Point(0, 0), bmp.Size);
+                g.CopyFromScreen(CaptureArea.Location, new Point(0, 0), bmp.Size);
 
                 //解放
                 g.Dispose();
@@ -3290,6 +3319,29 @@ namespace StandardTemplate
             bmp.Dispose();
 
             return true;    // TODO：エラー判定いれる？
+        }
+
+        // モニタの物理ピクセルでの範囲を取得する。
+        // Screen.Boundsは表示倍率で割られた論理サイズなので、CopyFromScreen(物理ピクセル単位)と
+        // 組み合わせると倍率100%以外のモニタで欠けが出る。EnumDisplaySettingsで実際の
+        // 解像度と配置を問い合わせて、そちらを使う。取得に失敗したらScreen.Boundsで代用する。
+        private Rectangle GetPhysicalBounds(Screen TargetScreen)
+        {
+            DEVMODE DevMode = new DEVMODE();
+            DevMode.dmSize = (short)Marshal.SizeOf(typeof(DEVMODE));
+
+            if (!EnumDisplaySettingsA(TargetScreen.DeviceName, ENUM_CURRENT_SETTINGS, ref DevMode))
+            {
+                return TargetScreen.Bounds;
+            }
+
+            if (DevMode.dmPelsWidth <= 0 || DevMode.dmPelsHeight <= 0)
+            {
+                return TargetScreen.Bounds;
+            }
+
+            return new Rectangle(DevMode.dmPositionX, DevMode.dmPositionY,
+                                 DevMode.dmPelsWidth, DevMode.dmPelsHeight);
         }
 
         // マウスのイベント処理
