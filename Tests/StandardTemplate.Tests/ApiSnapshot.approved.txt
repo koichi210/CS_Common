@@ -190,7 +190,6 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public Boolean GetBoolean(String Text, String DetectWord = "True")
     METHOD public Boolean GetDataGridCellBool(DataGridView dgv, Int32 RowCount, Int32 ColumnCount)
     METHOD public Boolean IsAliveHost(String HostName)
-    METHOD public Boolean IsExistDirectory(String DirectoryPath, Boolean IsNoticeExceptMsg = false, String ExceptMsgStr = "")
     METHOD public Boolean IsExistFile(String FilePath, Boolean IsNoticeExceptMsg = false, String ExceptMsgStr = "")
     METHOD public Boolean IsExistFileNameInEnvironment(String FileName = "")
     METHOD public Boolean IsExistFiles(String[] Filename, String BaseDir = "")
@@ -267,4 +266,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 17 types / 231 members
+# total: 17 types / 230 members

@@ -232,7 +232,10 @@ namespace StandardTemplate
             return false;
         }
 
-        public Boolean IsExistDirectory(String DirectoryPath, Boolean IsNoticeExceptMsg = false, String ExceptMsgStr = "")
+        // StcFileInputOutputにも同名の"IsExistDirectory"(自動作成の確認ダイアログを出す版)が
+        // あって紛らわしかった。こちらは本番の17プロジェクトからは一度も呼ばれておらず、
+        // IsExistPath内部からしか使われていなかったため、公開APIから外してprivateにした。
+        private Boolean IsExistDirectory(String DirectoryPath, Boolean IsNoticeExceptMsg = false, String ExceptMsgStr = "")
         {
             if (Directory.Exists(DirectoryPath))
             {
