@@ -29,7 +29,6 @@ namespace StandardTemplate.Tests
             RecordNewLineAndEscape(r);
             RecordStringAndArray(r);
             RecordPathNamePicking(r);
-            RecordSecure(r);
 
             SnapshotFile.Verify(r.Build(), "BehaviorSnapshot",
                 "共通クラスの実挙動が変わっている。リファクタで壊した可能性がある。");
@@ -338,27 +337,6 @@ namespace StandardTemplate.Tests
                 string t = s;
                 r.Case("First " + BehaviorRecorder.Show(t), () => fio.GetFirstPathName(t));
                 r.Case("Last  " + BehaviorRecorder.Show(t), () => fio.GetLastPathName(t));
-            }
-        }
-
-        // ------------------------------------------------------------------
-        // 暗号（鍵が固定なので結果は決まる）
-        // ------------------------------------------------------------------
-        private static void RecordSecure(BehaviorRecorder r)
-        {
-            var secure = new StcSecure();
-
-            r.Section("StcSecure.Encode(String) / Decode(String)");
-            r.Note("鍵と IV がソースに直書きされているため、同じ入力なら常に同じ結果になる。");
-            foreach (string s in new[] { "hello", "パスワード", "", "0123456789" })
-            {
-                string t = s;
-                r.Case("Encode " + BehaviorRecorder.Show(t), () => secure.Encode(t));
-            }
-            foreach (string s in new[] { "hello", "パスワード", "0123456789" })
-            {
-                string t = s;
-                r.Case("往復 " + BehaviorRecorder.Show(t), () => secure.Decode(secure.Encode(t)));
             }
         }
     }

@@ -2157,45 +2157,12 @@ namespace StandardTemplate
     // セキュリティ
     public partial class StcSecure
     {
-        // TODO：暗号キー＆複合キーを実装したい
-        // 鍵
-        private readonly byte[] DesKey = { 19, 205, 192, 75, 64, 178, 64, 178, 46, 129, 118, 109, 70, 30, 146, 231, 149, 124, 156, 41, 192, 20, 225, 204 };
-        private readonly byte[] DesIv = { 137, 203, 34, 150, 244, 130, 250, 180 };
-
-        // 暗号化
-        public String Encode(String Word)
-        {
-            return Encryption(Word, true);
-        }
-
-        // 複合化
-        public String Decode(String Word)
-        {
-            return Encryption(Word, false);
-        }
-
-        // 暗号化&複合化のメイン処理
-        private String Encryption(String Word, Boolean IsEncode = true)
-        {
-            // 暗号文は任意のバイト列になるため、有効な UTF-16 の並びになるとは限らない。
-            // 以前は暗号文も Encoding.Unicode で文字列にしていたので、UTF-16 として不正な
-            // 並びが置換文字に潰され、そこで情報が失われて復号できなくなっていた
-            // （日本語を入れると再現した）。暗号文の受け渡しには Base64 を使う。
-            byte[] Source = IsEncode ? Encoding.Unicode.GetBytes(Word) : Convert.FromBase64String(Word);
-
-            // Triple DESのサービスプロバイダを生成
-            TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider();
-            ICryptoTransform ict = IsEncode ? des.CreateEncryptor(DesKey, DesIv) : des.CreateDecryptor(DesKey, DesIv);
-
-            byte[] Result = TransformBytes(Source, ict);
-
-            // 暗号化した結果は Base64 の文字列で返す。復号した結果は元の文字列に戻す。
-            if (IsEncode)
-            {
-                return Convert.ToBase64String(Result);
-            }
-            return Encoding.Unicode.GetString(Result);
-        }
+        // かつてここには「鍵とIVをソースに直書きした固定鍵版」のEncode(String)/Decode(String)が
+        // あったが、本番の17プロジェクトからは一切使われておらず、実際に使われているのは
+        // 下のEncode(str, out key, out iv, out data)(呼び出しごとに鍵を新規生成し、
+        // 鍵ごと暗号文と一緒に保存する方式。StcSaveRestore.RegistSecureCtrl経由でパスワード
+        // 保存等に使われている)だけだった。「固定鍵をソースに書く」という誤った見本を
+        // 残さないため、未使用だった固定鍵版は削除した(パフォーマンス改善#8で対応)。
 
         // 暗号化witch鍵
         public String Encode(String str, out byte[] DesKey, out byte[] DesIV, out byte[] cryptData)

@@ -168,9 +168,7 @@ TYPE internal class StandardTemplate.StcSaveRestore
 
 TYPE public class StandardTemplate.StcSecure
     CTOR   public StcSecure()
-    METHOD public String Decode(String Word)
     METHOD public String Decode(String str, Byte[] DesKey, Byte[] DesIV, Byte[] cryptData)
-    METHOD public String Encode(String Word)
     METHOD public String Encode(String str, out Byte[] DesKey, out Byte[] DesIV, out Byte[] cryptData)
 
 TYPE internal class StandardTemplate.StcSleep
@@ -268,4 +266,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 17 types / 232 members
+# total: 17 types / 230 members

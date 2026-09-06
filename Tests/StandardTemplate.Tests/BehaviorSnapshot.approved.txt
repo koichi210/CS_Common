@@ -224,14 +224,4 @@
   First "a\"                 ->  "a"
   Last  "a\"                 ->  ""
 
-## StcSecure.Encode(String) / Decode(String)
-   # 鍵と IV がソースに直書きされているため、同じ入力なら常に同じ結果になる。
-  Encode "hello"       ->  "/TC5VTwuhTK9ZlTPAw0gaw=="
-  Encode "パスワード"       ->  "MdqaUCzL7TMnw36/Ab4ONw=="
-  Encode ""            ->  "LUEzrUI0KXw="
-  Encode "0123456789"  ->  "xAGIfVd3ilm1jEZcPkSi/JY2fc5aLvZo"
-  往復 "hello"           ->  "hello"
-  往復 "パスワード"           ->  "パスワード"
-  往復 "0123456789"      ->  "0123456789"
-
-# total: 26 sections / 163 cases
+# total: 25 sections / 156 cases

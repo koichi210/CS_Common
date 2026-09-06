@@ -15,13 +15,11 @@ namespace StandardTemplate.Tests
     public class FixedBugRegressionTests
     {
         private StcUtils util;
-        private StcSecure secure;
 
         [TestInitialize]
         public void SetUp()
         {
             util = new StcUtils();
-            secure = new StcSecure();
         }
 
         [TestMethod]
@@ -87,28 +85,10 @@ namespace StandardTemplate.Tests
             Assert.AreEqual("/home/user/work", util.AppendLinuxPathName("/home/user", "work"));
         }
 
-        [TestMethod]
-        public void StcSecure_日本語を含めても往復できる()
-        {
-            // 以前は暗号文を Encoding.Unicode で文字列化していたため、有効な UTF-16 に
-            // ならない並びが置換文字に潰れて復号できなくなっていた。Base64 で受け渡す。
-            foreach (string word in new[] { "hello", "パスワード", "0123456789", "", "記号!\"#$%&'()", "混在Abc漢字123" })
-            {
-                Assert.AreEqual(word, secure.Decode(secure.Encode(word)), "往復できるはず: " + word);
-            }
-        }
-
-        [TestMethod]
-        public void StcSecure_暗号化結果はBase64になる()
-        {
-            string encoded = secure.Encode("hello");
-
-            // 例外が出なければ Base64 として妥当
-            byte[] bytes = Convert.FromBase64String(encoded);
-
-            Assert.IsTrue(bytes.Length > 0);
-            Assert.AreNotEqual("hello", encoded, "平文がそのまま出てはいけない");
-        }
+        // StcSecure_日本語を含めても往復できる / StcSecure_暗号化結果はBase64になる は
+        // 固定鍵版Encode(String)/Decode(String)削除に伴い削除(パフォーマンス改善#8で対応)。
+        // 本番で実際に使われている鍵つき版(Encode(str, out key, out iv, out data))は
+        // 別途 StcSaveRestore 経由のテストでカバーされている。
 
         [TestMethod]
         public void RemoveStringArray_空文字を指定しても落ちない()
