@@ -3261,38 +3261,33 @@ namespace StandardTemplate
 
         private Boolean SaveWithCaptureCurrentScreen(String PictFileName)
         {
-            //Bitmap bmp = new Bitmap(Screen.PrimaryScreen.Bounds.Width,
-            //                        Screen.PrimaryScreen.Bounds.Height);
+            // 全モニタの位置・サイズから、仮想デスクトップ全体の外接矩形(bounding box)を求める。
+            // 以前は各画面の幅・高さを単純に合計してキャンバスサイズにしていたため、
+            // モニタの配置やサイズの組み合わせによっては正しい範囲にならなかった
+            // (「画面配置によっては期待動作しない」というTODOで自覚されていた不具合)。
+            // 例えばモニタが横に並んでいれば幅は合計で合っていても、縦位置がずれている
+            // 配置では高さの合計が実際の必要範囲と一致しない、といったケースがあった。
+            int MinX = int.MaxValue;
+            int MinY = int.MaxValue;
+            int MaxX = int.MinValue;
+            int MaxY = int.MinValue;
 
-            //TODO：画面配置によっては期待動作しない
-            int Width = 0;
-            int Height = 0;
-            int X = 0;
-            int Y = 0;
-
-            for (int i = 0; i < Screen.AllScreens.Length; i++)
+            foreach (Screen ScreenInfo in Screen.AllScreens)
             {
-                Width += System.Math.Abs(Screen.AllScreens[i].Bounds.Width);
-                Height += System.Math.Abs(Screen.AllScreens[i].Bounds.Height);
-
-                if (X > Screen.AllScreens[i].Bounds.X)
-                {
-                    X = Screen.AllScreens[i].Bounds.X;
-                }
-
-                if (Y > Screen.AllScreens[i].Bounds.Y)
-                {
-                    Y = Screen.AllScreens[i].Bounds.Y;
-                }
+                MinX = Math.Min(MinX, ScreenInfo.Bounds.X);
+                MinY = Math.Min(MinY, ScreenInfo.Bounds.Y);
+                MaxX = Math.Max(MaxX, ScreenInfo.Bounds.X + ScreenInfo.Bounds.Width);
+                MaxY = Math.Max(MaxY, ScreenInfo.Bounds.Y + ScreenInfo.Bounds.Height);
             }
-            Bitmap bmp = new Bitmap(Width, Height);
+
+            Bitmap bmp = new Bitmap(MaxX - MinX, MaxY - MinY);
 
             //Graphicsの作成
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                //画面全体をコピーする
-                //g.CopyFromScreen(new Point(0, 0), new Point(0, 0), bmp.Size);
-                g.CopyFromScreen(new Point(X, Y), new Point(X, Y), bmp.Size);
+                // コピー元は仮想デスクトップ全体の左上(MinX, MinY)から、
+                // コピー先はビットマップの左上(0, 0)から。
+                g.CopyFromScreen(new Point(MinX, MinY), new Point(0, 0), bmp.Size);
 
                 //解放
                 g.Dispose();
