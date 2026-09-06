@@ -711,12 +711,14 @@ namespace StandardTemplate
         // リストコントロールの中身を全て選択
         public void SelectAll(KeyEventArgs e)
         {
-            // TODO：条件文は外に出したい
-            // 全選択
-            if (e.KeyCode == Keys.A && e.Control == true)
+            // ガード節にして、以降のネストを浅くした(挙動は変えていない)
+            if (e.KeyCode != Keys.A || e.Control != true)
             {
-                SendKeys.SendWait("{HOME}+{END}");
+                return;
             }
+
+            // 全選択
+            SendKeys.SendWait("{HOME}+{END}");
         }
 
         public String[] GetSubDirFileList(String TopDirPath, String SubDirPath, String TargetFile)
@@ -855,44 +857,40 @@ namespace StandardTemplate
         // リストボックスの選択項目をコピー
         public void CopyToClipboard(KeyEventArgs e, ListBox ListBoxCtrl, String RootPath = "")
         {
-            // TODO：条件文は外に出したい
-            // コピー
-            if (e.KeyCode == Keys.C && e.Control == true)
+            // ガード節にして、以降のネストを浅くした(挙動は変えていない)
+            if (e.KeyCode != Keys.C || e.Control != true)
             {
-                String TargetName = GetSelectName(ListBoxCtrl, RootPath);
-                Clipboard.SetText(TargetName);
+                return;
             }
+
+            // コピー
+            String TargetName = GetSelectName(ListBoxCtrl, RootPath);
+            Clipboard.SetText(TargetName);
         }
 
         // リストコントロールの選択項目をコピー
         public void CopyToClipboard(KeyEventArgs e, ListView ListViewCtrl, String RootPath = "", int index = 0)
         {
-            // TODO：条件文は外に出したい
-            // コピー
-            if (e.KeyCode == Keys.C && e.Control == true)
+            // ガード節にして、以降のネストを浅くした(挙動は変えていない)
+            if (e.KeyCode != Keys.C || e.Control != true)
             {
-                String TargetName = GetSelectListName(ListViewCtrl, RootPath, index);
-	            if (!TargetName.Equals(String.Empty))
-	            {
-	                Clipboard.SetText(TargetName);
-	            }
+                return;
+            }
+
+            // コピー
+            String TargetName = GetSelectListName(ListViewCtrl, RootPath, index);
+            if (!TargetName.Equals(String.Empty))
+            {
+                Clipboard.SetText(TargetName);
             }
         }
 
         // リストコントロールの中身をString配列で取得
         public String[] GetStrArrayFromListBox(ListBox.SelectedObjectCollection ListBoxSelected)
         {
-            // TODO ListBoxの値を配列で取得したい
-            StringBuilder Str = new StringBuilder();
-            foreach (object Item in ListBoxSelected)
-            {
-                Str.Append(Item.ToString()).Append(Environment.NewLine);
-            }
-
-            char[] TrimChar = { '\r', '\n' };
-            String[] StrArray = Str.ToString().TrimEnd(TrimChar).Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-            return StrArray;
+            // 以前は改行区切りの文字列に連結してから配列へ分割し直す遠回りな実装だった。
+            // 素直にLINQで直接配列へ変換する。
+            return ListBoxSelected.Cast<object>().Select(Item => Item.ToString()).ToArray();
         }
 
         // 文字列をコンボボックスにセット
@@ -3073,7 +3071,10 @@ namespace StandardTemplate
             LEFT_UP,
         };
 
-        // TODO：パラメータの意味が分かり難い
+        // IsStopRequest: Stop()が呼ばれたら true。ExecuteSleep()等がループを途中で
+        //   打ち切るために見ている中断フラグ(SetXXXメソッド無しで直接参照される)。
+        // IsCaptureCase: SetCaptureCase()で設定する、そもそも今回キャプチャを実行するか
+        //   どうかのオン/オフ。CaptureProc()はこれがfalseなら即座に何もせず抜ける。
         public Boolean IsStopRequest;
         public Boolean IsCaptureCase;
 
@@ -3300,28 +3301,35 @@ namespace StandardTemplate
             // 設計そのものがFULL_SCREEN(Ctrl+PrintScreenで撮る画面全体=全モニタ結合と
             // ほぼ同じ結果)と機能が重複していた)。名前の通り「呼び出し元のウィンドウが
             // 今表示されているモニタ1枚だけ」を撮るように直した。
-            Screen TargetScreen = (TargetWindow != null) ? Screen.FromControl(TargetWindow) : Screen.PrimaryScreen;
-
-            // Screen.Boundsではなく物理ピクセルでの範囲を使う(表示倍率が100%以外のモニタ対策)
-            Rectangle CaptureArea = GetPhysicalBounds(TargetScreen);
-
-            Bitmap bmp = new Bitmap(CaptureArea.Width, CaptureArea.Height);
-
-            //Graphicsの作成
-            using (Graphics g = Graphics.FromImage(bmp))
+            // SaveClipboard(SendKeys経由の他2種)と同じく、失敗時はtrueを固定で返さず
+            // falseを返すようにした(ディスク書き込み失敗・GDI例外等を吸収する)。
+            Boolean IsSucess = true;
+            try
             {
-                //対象モニタの左上座標からコピーする
-                g.CopyFromScreen(CaptureArea.Location, new Point(0, 0), bmp.Size);
+                Screen TargetScreen = (TargetWindow != null) ? Screen.FromControl(TargetWindow) : Screen.PrimaryScreen;
 
-                //解放
-                g.Dispose();
+                // Screen.Boundsではなく物理ピクセルでの範囲を使う(表示倍率が100%以外のモニタ対策)
+                Rectangle CaptureArea = GetPhysicalBounds(TargetScreen);
+
+                using (Bitmap bmp = new Bitmap(CaptureArea.Width, CaptureArea.Height))
+                {
+                    //Graphicsの作成
+                    using (Graphics g = Graphics.FromImage(bmp))
+                    {
+                        //対象モニタの左上座標からコピーする
+                        g.CopyFromScreen(CaptureArea.Location, new Point(0, 0), bmp.Size);
+                    }
+
+                    // ファイル保存
+                    bmp.Save(PictFileName);
+                }
+            }
+            catch (Exception)
+            {
+                IsSucess = false;
             }
 
-            // ファイル保存
-            bmp.Save(PictFileName);
-            bmp.Dispose();
-
-            return true;    // TODO：エラー判定いれる？
+            return IsSucess;
         }
 
         // モニタの物理ピクセルでの範囲を取得する。
