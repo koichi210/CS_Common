@@ -752,20 +752,6 @@ namespace StandardTemplate
             return (String[])al.ToArray(typeof(String));
         }
 
-        // 全角文字を半角文字に変換
-        //public String[] ChangeWide2Narrow(String[] StrArray)
-        //{
-        //    // Memo: 参照設定に「Microsoft.VisualBasic」が必要
-        //    return StrArray.Select(str => Microsoft.VisualBasic.Strings.StrConv(str, Microsoft.VisualBasic.VbStrConv.Narrow)).ToArray();
-        //}
-
-        //// 半角文字を全角文字に変換
-        //public String[] ChangeNarrow2Wide(String[] StrArray)
-        //{
-        //    // Memo: 参照設定に「Microsoft.VisualBasic」が必要
-        //    return StrArray.Select(str => Microsoft.VisualBasic.Strings.StrConv(str, Microsoft.VisualBasic.VbStrConv.Wide)).ToArray();
-        //}
-
         public String[] GetStringArray(ComboBox CbCtrl)
         {
             String[] CombBoxArray = CbCtrl.Items.Cast<String>().ToArray();
@@ -1742,20 +1728,6 @@ namespace StandardTemplate
                 Ctrl => Ctrl.Ctrl.Value = int.Parse(ElementValue));
         }
 
-        // 設定ファイル読み込み[CheckedListBox]
-        private void LoadCheckListCtrl(CheckedListBox CheckListCtrl, String Attribute, String ElementValue)
-        {
-            for (int i = 0; i < CheckListCtrl.Items.Count; i++)
-            {
-                if (CheckListCtrl.Items[i].ToString() == Attribute)
-                {
-                    Boolean IsChecked = util.GetBoolean(ElementValue, "Checked");
-                    CheckListCtrl.SetItemChecked(i, IsChecked);
-                    break;
-                }
-            }
-        }
-
         // 設定ファイル読み込み[SecureCtrl]
         private Boolean LoadSecureCtrl(XmlElement element, String ElementValue)
         {
@@ -2157,38 +2129,13 @@ namespace StandardTemplate
             // 以前は暗号文も Encoding.Unicode で文字列にしていたので、UTF-16 として不正な
             // 並びが置換文字に潰され、そこで情報が失われて復号できなくなっていた
             // （日本語を入れると再現した）。暗号文の受け渡しには Base64 を使う。
-            byte[] Source;
-            if (IsEncode)
-            {
-                Source = Encoding.Unicode.GetBytes(Word);
-            }
-            else
-            {
-                Source = Convert.FromBase64String(Word);
-            }
+            byte[] Source = IsEncode ? Encoding.Unicode.GetBytes(Word) : Convert.FromBase64String(Word);
 
             // Triple DESのサービスプロバイダを生成
             TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider();
+            ICryptoTransform ict = IsEncode ? des.CreateEncryptor(DesKey, DesIv) : des.CreateDecryptor(DesKey, DesIv);
 
-            // 入出力用のストリームを生成
-            MemoryStream ms = new MemoryStream();
-            ICryptoTransform ict;
-            if (IsEncode)
-            {
-                ict = des.CreateEncryptor(DesKey, DesIv);
-            }
-            else
-            {
-                ict = des.CreateDecryptor(DesKey, DesIv);
-            }
-            CryptoStream cs = new CryptoStream(ms, ict, CryptoStreamMode.Write);
-
-            // ストリームに暗号化されたデータを書き込み
-            cs.Write(Source, 0, Source.Length);
-            cs.Close();
-
-            byte[] Result = ms.ToArray();
-            ms.Close();
+            byte[] Result = TransformBytes(Source, ict);
 
             // 暗号化した結果は Base64 の文字列で返す。復号した結果は元の文字列に戻す。
             if (IsEncode)
@@ -2205,24 +2152,10 @@ namespace StandardTemplate
             DesKey = TDES.Key;
             DesIV = TDES.IV;
 
-            // source 配列から cryptData 配列へ変換 
-            // 文字列を byte 配列に変換します 
             byte[] source = Encoding.Unicode.GetBytes(str);
 
-            // Triple DES のサービス プロバイダを生成します 
             TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider();
-
-            // 入出力用のストリームを生成します 
-            MemoryStream ms = new MemoryStream();
-            CryptoStream cs = new CryptoStream(ms, des.CreateEncryptor(DesKey, DesIV), CryptoStreamMode.Write);
-
-            // ストリームに暗号化するデータを書き込みます 
-            cs.Write(source, 0, source.Length);
-            cs.Close();
-
-            // 暗号化されたデータを byte 配列で取得します 
-            cryptData = ms.ToArray();
-            ms.Close();
+            cryptData = TransformBytes(source, des.CreateEncryptor(DesKey, DesIV));
 
             return Encoding.Unicode.GetString(cryptData);
         }
@@ -2230,26 +2163,26 @@ namespace StandardTemplate
         // 複合化with鍵
         public String Decode(String str, byte[] DesKey, byte[] DesIV, byte[] cryptData)
         {
-            // cryptData 配列から destination 配列へ変換 
-
-            // Triple DES のサービス プロバイダを生成します 
             TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider();
+            byte[] destination = TransformBytes(cryptData, des.CreateDecryptor(DesKey, DesIV));
 
-            // 入出力用のストリームを生成します 
+            return Encoding.Unicode.GetString(destination);
+        }
+
+        // MemoryStream+CryptoStreamでの変換処理は暗号化/復号どちらの経路でも同じ形をしていたので、
+        // ICryptoTransform(Encryptor/Decryptor)を渡すだけの共通処理としてまとめた。
+        private static byte[] TransformBytes(byte[] source, ICryptoTransform transform)
+        {
             MemoryStream ms = new MemoryStream();
-            CryptoStream cs = new CryptoStream(ms, des.CreateDecryptor(DesKey, DesIV),
-                                                                CryptoStreamMode.Write);
+            CryptoStream cs = new CryptoStream(ms, transform, CryptoStreamMode.Write);
 
-            // ストリームに暗号化されたデータを書き込みます 
-            cs.Write(cryptData, 0, cryptData.Length);
+            cs.Write(source, 0, source.Length);
             cs.Close();
 
-            // 復号化されたデータを byte 配列で取得します 
-            byte[] destination = ms.ToArray();
+            byte[] result = ms.ToArray();
             ms.Close();
 
-            // byte 配列を文字列に変換して表示します 
-            return Encoding.Unicode.GetString(destination);
+            return result;
         }
     }
 
@@ -2310,10 +2243,12 @@ namespace StandardTemplate
         // 文字コード変換[UTF8→Sjis]
         public Boolean ChangeStringCodeUTF2SJIS(String InFileName, String OutFileName)
         {
-            //Encoding src = Encoding.ASCII;
+            // .NET文字列は内部的に常にUTF-16なので、変換すべきは「読み込み時のエンコード指定」と
+            // 「書き込み時のエンコード指定」だけで十分。以前はここでさらにEncoding.Convertを使って
+            // バイト列を変換していたが、結果(sjis_str)がどこにも使われておらず、SaveFile内部の
+            // StreamWriterがShift_JISで書き込む時点ですでに変換は完了しているため、無駄な計算だった。
             Encoding src = Encoding.GetEncoding("utf-8");
-            Encoding dest = Encoding.GetEncoding("Shift_JIS");
-            
+
             String FileData = "";
             if (File.Exists(InFileName))
             {
@@ -2321,10 +2256,6 @@ namespace StandardTemplate
                 FileData = sr.ReadToEnd();
                 sr.Close();
             }
-            
-            Byte[] temp = src.GetBytes(FileData);
-            Byte[] sjis_temp = Encoding.Convert(src, dest, temp);
-            String sjis_str = dest.GetString(sjis_temp);
 
             SaveFile(OutFileName, FileData);
 
@@ -2847,24 +2778,6 @@ namespace StandardTemplate
             }
 
             return Encoding.GetEncoding(EncordStr);
-        }
-
-        private String GetHtmlSource(String Url)
-        {
-            String HtmlSource = "";
-            WebClient client = new WebClient();
-            try
-            {
-                client.Encoding = System.Text.Encoding.UTF8;
-                HtmlSource = client.DownloadString(Url);
-            }
-            catch (Exception)
-            {
-                MessageBox.Show("ソース取得に失敗しました。" + Environment.NewLine + Url);
-            }
-
-            StcUtils util = new StcUtils();
-            return util.ChangeNewLineCodeLF2CRLF(HtmlSource);
         }
     }
 
