@@ -2978,11 +2978,15 @@ namespace StandardTemplate
         }
     }
 
-    // TODO：機能ごとにバラしておくと汎用的
     // *******************************************************************************
     // キャプチャ
+    //
+    // 物理的にクラスを分割すると17プロジェクトのcsprojすべてに影響するため、
+    // StcUtilsのときと同じく#regionで責務ごとに折りたためるようにするだけに留めた
+    // (「機能ごとにバラしておくと汎用的」というTODOへの対応)。
     public class CaptWindow
     {
+        #region P/Invoke・列挙型・フィールド定義
         ///////////////////////////////////////////////////////////////////////////////////////////////
         [DllImport("user32.dll")]
         extern static uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
@@ -3077,6 +3081,9 @@ namespace StandardTemplate
         public Control TargetWindow;
 
         private String ErrorLog;
+        #endregion
+
+        #region 初期化・パラメータ設定
         public CaptWindow()
         {
             Initialize();
@@ -3192,6 +3199,9 @@ namespace StandardTemplate
         {
             return ErrorLog;
         }
+        #endregion
+
+        #region 画面キャプチャ
 
         public void CaptureProc()
         {
@@ -3336,7 +3346,9 @@ namespace StandardTemplate
             return new Rectangle(DevMode.dmPositionX, DevMode.dmPositionY,
                                  DevMode.dmPelsWidth, DevMode.dmPelsHeight);
         }
+        #endregion
 
+        #region マウス操作
         // マウスのイベント処理
         public void MouseProc(String x, String y, MOUSE_EVENT Event)
         {
@@ -3400,6 +3412,7 @@ namespace StandardTemplate
                 }
             }
         }
+        #endregion
     }
 
     // *******************************************************************************
