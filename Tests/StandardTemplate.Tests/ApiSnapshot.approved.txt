@@ -110,7 +110,6 @@ TYPE public class StandardTemplate.StcFileInputOutput
     METHOD public Boolean RemoveReadonlyAttribute(String FileName)
     METHOD public String CreateTempFile(String Ext = "")
     METHOD public String GetDirectoryPath(String Title = "フォルダを指定してください。", String DefaultPath = "", Boolean IsNewFolder = false)
-    METHOD public String GetFileData(String FilePath)
     METHOD public String GetFirstPathName(String Path)
     METHOD public String GetLastPathName(String Path)
     METHOD public String LoadFile(String FilePath)
@@ -261,4 +260,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 16 types / 227 members
+# total: 16 types / 226 members

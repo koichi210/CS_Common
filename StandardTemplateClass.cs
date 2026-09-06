@@ -2727,13 +2727,6 @@ namespace StandardTemplate
             sw.Close();
         }
 
-        // TODO：削除する
-        // ファイルデータを取得する
-        public String GetFileData(String FilePath)
-        {
-            return LoadFile(FilePath);
-        }
-
         // ファイルデータを取得する
         public String LoadFile(String FilePath)
         {
@@ -2750,7 +2743,7 @@ namespace StandardTemplate
         public Boolean DetectFileData(String FilePath, String DetectWord)
         {
             Boolean IsFound = false;
-            String Data = GetFileData(FilePath);
+            String Data = LoadFile(FilePath);
 
             if (Data.IndexOf(DetectWord) != -1)
             {
