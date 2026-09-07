@@ -47,6 +47,9 @@ namespace InputSimulation
         /// <summary>
         /// シミュレートされたマウスイベントの構造体
         /// </summary>
+        // ExtraInfo(ネイティブのdwExtraInfo)はULONG_PTR、つまりポインタサイズ(x86:4byte/x64:8byte)。
+        // ここをintのままにするとx64ビルド時にネイティブのMOUSEINPUT/KEYBOARDINPUTと
+        // メモリレイアウトがズレてSendInputが誤動作するため、IntPtrにしてある。
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
         public struct MouseInput
         {
@@ -55,7 +58,7 @@ namespace InputSimulation
             public int Data;
             public int Flags;
             public int Time;
-            public int ExtraInfo;
+            public System.IntPtr ExtraInfo;
         }
 
         /// <summary>
@@ -68,7 +71,7 @@ namespace InputSimulation
             public short ScanCode;
             public int Flags;
             public int Time;
-            public int ExtraInfo;
+            public System.IntPtr ExtraInfo;
         }
 
         /// <summary>
@@ -85,19 +88,22 @@ namespace InputSimulation
         /// <summary>
         /// キーストローク、マウスの動き、マウスクリックなどの入力イベントの構造体
         /// </summary>
+        // Offset 8固定: ネイティブのINPUT構造体は、共用体側にポインタサイズのメンバ(dwExtraInfo)
+        // を含むため、x64では8byte境界に揃えるアラインメントが入りunionはoffset 8から始まる。
+        // x86でも同じくoffset 8に置いておけば(4byte分は未使用の詰め物になるだけで)両OSで安全に動く。
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit)]
         public struct Input
         {
             [System.Runtime.InteropServices.FieldOffset(0)]
             public int Type;
 
-            [System.Runtime.InteropServices.FieldOffset(4)]
+            [System.Runtime.InteropServices.FieldOffset(8)]
             public MouseInput Mouse;
 
-            [System.Runtime.InteropServices.FieldOffset(4)]
+            [System.Runtime.InteropServices.FieldOffset(8)]
             public KeyboardInput Keyboard;
 
-            [System.Runtime.InteropServices.FieldOffset(4)]
+            [System.Runtime.InteropServices.FieldOffset(8)]
             public HardwareInput Hardware;
         }
 
@@ -200,7 +206,7 @@ namespace InputSimulation
             input.Mouse.X = x;
             input.Mouse.Y = y;
             input.Mouse.Time = time;
-            input.Mouse.ExtraInfo = extraInfo;
+            input.Mouse.ExtraInfo = new System.IntPtr(extraInfo);
 
             inputs.Add(input);
         }
@@ -256,7 +262,7 @@ namespace InputSimulation
             input.Keyboard.VirtualKey = virtualKey;
             input.Keyboard.ScanCode = scanCode;
             input.Keyboard.Time = time;
-            input.Keyboard.ExtraInfo = extraInfo;
+            input.Keyboard.ExtraInfo = new System.IntPtr(extraInfo);
 
             inputs.Add(input);
         }
