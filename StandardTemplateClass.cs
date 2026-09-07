@@ -2400,10 +2400,16 @@ namespace StandardTemplate
         }
 
         // 読み込みファイルを選択
-        public String SelectLoadFileName(String FileName = "")
+        // InitialDirectoryを指定すると、ダイアログの初期表示フォルダをそこに固定できる
+        // (未指定時はWindowsが前回開いたフォルダ等を使う、これまで通りの挙動)
+        public String SelectLoadFileName(String FileName = "", String InitialDirectory = "")
         {
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.FileName = FileName;
+            if (InitialDirectory != String.Empty)
+            {
+                ofd.InitialDirectory = InitialDirectory;
+            }
             ofd.Filter = "XMLファイル(*.xml)|*.xml|すべてのファイル(*.*)|*.*";
             ofd.Title = "読み込む設定ファイルを選択してください";
 
@@ -2416,7 +2422,9 @@ namespace StandardTemplate
         }
 
         // 保存ファイルを選択
-        public String SelectSaveFileName(String FileName)
+        // InitialDirectoryを指定すると、(任意のファイル名を指定する側の)ダイアログの
+        // 初期表示フォルダをそこに固定できる
+        public String SelectSaveFileName(String FileName, String InitialDirectory = "")
         {
             String SaveFileName = "";
             if (FileName != String.Empty)
@@ -2442,6 +2450,10 @@ namespace StandardTemplate
                 // 任意のファイル名を指定
                 SaveFileDialog ofd = new SaveFileDialog();
                 ofd.FileName = FileName;
+                if (InitialDirectory != String.Empty)
+                {
+                    ofd.InitialDirectory = InitialDirectory;
+                }
                 ofd.Filter = "XMLファイル(*.xml)|*.xml|すべてのファイル(*.*)|*.*";
                 ofd.Title = "保存する設定ファイルを選択してください";
 
