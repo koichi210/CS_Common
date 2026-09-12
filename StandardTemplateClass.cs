@@ -2175,6 +2175,165 @@ namespace StandardTemplate
                 SaveXmlManageParam(DefaultSecureAttrName, DefaultSecureAttrValueCryptData, cryptData);
             }
         }
+
+        // *******************************************************************************
+        // JSON汎用プロファイル([[_Common/JsonFileStorage.cs]]と組み合わせて使う)
+        //
+        // EventRecorderのように保存したいデータに意味の分かる名前を付けられる場合は専用の
+        // POCO(Profile.cs)を作る方が読みやすいが、RegistCtrlで何十個ものコントロールを
+        // 登録しているだけの既存プロジェクト(Cheetos/FileArranger等)では、フィールドごとに
+        // 専用POCOを手書きすると数が多くズレの元になる。ここでは「登録済みコントロールの
+        // 現在値」をそのままキー(AttrName+AttrValue、コントロール名由来なので読める)付きの
+        // 汎用データに詰め替えるだけの橋渡しを用意し、個別のPOCOを作らずに済むようにする。
+        //
+        // このクラス自体はNewtonsoft.Jsonに依存しない(GenericProfileはDictionary/Listだけの
+        // 素のPOCO)。実際のJSON読み書きは、JsonFileStorage.csをリンクした各プロジェクトの
+        // SaveRestore.cs側でJsonFileStorage.Save/Load<GenericProfile>を呼ぶ形にすることで、
+        // Newtonsoft.Jsonへの依存をJSON対応したプロジェクトだけに閉じ込めている。
+        public GenericProfile BuildGenericProfile()
+        {
+            GenericProfile profile = new GenericProfile();
+
+            for (int i = 0; i < RegTextCtrl.Length; i++) { profile.Values[GenericKey(RegTextCtrl[i])] = RegTextCtrl[i].Ctrl.Text; }
+            for (int i = 0; i < RegRadioCtrl.Length; i++) { profile.Values[GenericKey(RegRadioCtrl[i])] = RegRadioCtrl[i].Ctrl.Checked.ToString(); }
+            for (int i = 0; i < RegCheckCtrl.Length; i++) { profile.Values[GenericKey(RegCheckCtrl[i])] = RegCheckCtrl[i].Ctrl.Checked.ToString(); }
+            for (int i = 0; i < RegComboCtrl.Length; i++) { profile.Values[GenericKey(RegComboCtrl[i])] = RegComboCtrl[i].Ctrl.Text; }
+            for (int i = 0; i < RegHScrollBarCtrl.Length; i++) { profile.Values[GenericKey(RegHScrollBarCtrl[i])] = RegHScrollBarCtrl[i].Ctrl.Value.ToString(); }
+
+            for (int i = 0; i < RegComboCtrlList.Length; i++)
+            {
+                List<String> items = new List<String>();
+                foreach (Object item in RegComboCtrlList[i].Ctrl.Items) { items.Add(item.ToString()); }
+                profile.Lists[GenericKey(RegComboCtrlList[i])] = items;
+            }
+
+            for (int i = 0; i < RegCheckedListBox.Length; i++)
+            {
+                List<String> items = new List<String>();
+                Dictionary<String, Boolean> checkedStates = new Dictionary<String, Boolean>();
+                for (int j = 0; j < RegCheckedListBox[i].Ctrl.Items.Count; j++)
+                {
+                    String itemName = RegCheckedListBox[i].Ctrl.Items[j].ToString();
+                    items.Add(itemName);
+                    checkedStates[itemName] = RegCheckedListBox[i].Ctrl.GetItemChecked(j);
+                }
+                profile.Lists[GenericKey(RegCheckedListBox[i])] = items;
+                profile.CheckedStates[GenericKey(RegCheckedListBox[i])] = checkedStates;
+            }
+
+            for (int i = 0; i < RegDataGridCtrl.Length; i++)
+            {
+                List<List<String>> rows = new List<List<String>>();
+                for (int r = 0; r < RegDataGridCtrl[i].Ctrl.RowCount; r++)
+                {
+                    List<String> row = new List<String>();
+                    for (int c = 0; c < RegDataGridCtrl[i].Ctrl.ColumnCount; c++)
+                    {
+                        Object cellValue = RegDataGridCtrl[i].Ctrl.Rows[r].Cells[c].Value;
+                        row.Add(cellValue == null ? "" : cellValue.ToString());
+                    }
+                    rows.Add(row);
+                }
+                profile.Grids[GenericKey(RegDataGridCtrl[i])] = rows;
+            }
+
+            // SecureCtrl(暗号化して保存するパスワード等)は現状どのプロジェクトも未使用のため、
+            // JSON汎用プロファイルでは対応していない(必要になったら追加する)
+            return profile;
+        }
+
+        // profileの内容を登録済みコントロールへ反映する(BuildGenericProfileの逆)。
+        // まずSetDefaultParamで初期値に戻してから、profileにある値だけ上書きする
+        // (XML読込のLoadXmlFileと同じ、見つからない項目は初期値のまま残す方針)
+        public void ApplyGenericProfile(GenericProfile profile)
+        {
+            SetDefaultParam();
+            if (profile == null)
+            {
+                return;
+            }
+
+            String value;
+            for (int i = 0; i < RegTextCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegTextCtrl[i]), out value)) { RegTextCtrl[i].Ctrl.Text = value; } }
+            for (int i = 0; i < RegRadioCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegRadioCtrl[i]), out value)) { RegRadioCtrl[i].Ctrl.Checked = util.GetBoolean(value); } }
+            for (int i = 0; i < RegCheckCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegCheckCtrl[i]), out value)) { RegCheckCtrl[i].Ctrl.Checked = util.GetBoolean(value); } }
+            for (int i = 0; i < RegComboCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegComboCtrl[i]), out value)) { RegComboCtrl[i].Ctrl.Text = value; } }
+            for (int i = 0; i < RegHScrollBarCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegHScrollBarCtrl[i]), out value)) { RegHScrollBarCtrl[i].Ctrl.Value = util.GetInteger(value); } }
+
+            for (int i = 0; i < RegComboCtrlList.Length; i++)
+            {
+                RegComboCtrlList[i].Ctrl.Items.Clear();
+                List<String> items;
+                if (profile.Lists.TryGetValue(GenericKey(RegComboCtrlList[i]), out items))
+                {
+                    foreach (String item in items) { RegComboCtrlList[i].Ctrl.Items.Add(item); }
+                }
+            }
+
+            for (int i = 0; i < RegCheckedListBox.Length; i++)
+            {
+                RegCheckedListBox[i].Ctrl.Items.Clear();
+                List<String> items;
+                if (profile.Lists.TryGetValue(GenericKey(RegCheckedListBox[i]), out items))
+                {
+                    Dictionary<String, Boolean> checkedStates;
+                    profile.CheckedStates.TryGetValue(GenericKey(RegCheckedListBox[i]), out checkedStates);
+
+                    foreach (String item in items)
+                    {
+                        int idx = RegCheckedListBox[i].Ctrl.Items.Add(item);
+                        Boolean isChecked;
+                        if (checkedStates == null || !checkedStates.TryGetValue(item, out isChecked))
+                        {
+                            isChecked = false;
+                        }
+                        RegCheckedListBox[i].Ctrl.SetItemChecked(idx, isChecked);
+                    }
+                }
+            }
+
+            for (int i = 0; i < RegDataGridCtrl.Length; i++)
+            {
+                RegDataGridCtrl[i].Ctrl.RowCount = 1;
+                List<List<String>> rows;
+                if (profile.Grids.TryGetValue(GenericKey(RegDataGridCtrl[i]), out rows) && rows.Count > 0)
+                {
+                    RegDataGridCtrl[i].Ctrl.RowCount = rows.Count;
+                    for (int r = 0; r < rows.Count; r++)
+                    {
+                        for (int c = 0; c < rows[r].Count && c < RegDataGridCtrl[i].Ctrl.ColumnCount; c++)
+                        {
+                            RegDataGridCtrl[i].Ctrl.Rows[r].Cells[c].Value = rows[r][c];
+                        }
+                    }
+                }
+            }
+        }
+
+        // GenericProfileのキー(コントロール名由来なので、旧XMLの「Cell_行-列」方式より読める)
+        private static String GenericKey(OriginDB Ctrl)
+        {
+            return Ctrl.AttrName + "|" + Ctrl.AttrValue;
+        }
+    }
+
+    // JSON汎用プロファイルのデータ本体([[_Common/JsonFileStorage.cs]]でシリアライズする)。
+    // BuildGenericProfile/ApplyGenericProfile専用で、StcSaveRestore自体はこの型を
+    // 経由してもNewtonsoft.Jsonには依存しない(依存するのはJsonFileStorage.Save/Loadを
+    // 呼び出す側=各プロジェクトのSaveRestore.cs)
+    public class GenericProfile
+    {
+        // TextBox/RadioButton/CheckBox/ComboBox/HScrollBarの現在値。キーは"AttrName|AttrValue"
+        public Dictionary<String, String> Values { get; set; } = new Dictionary<String, String>();
+
+        // ComboBoxの履歴一覧・CheckedListBoxの項目名一覧。キーは"AttrName|AttrValue"
+        public Dictionary<String, List<String>> Lists { get; set; } = new Dictionary<String, List<String>>();
+
+        // CheckedListBoxの各項目のチェック状態。キーは"AttrName|AttrValue"、値は項目名→チェック有無
+        public Dictionary<String, Dictionary<String, Boolean>> CheckedStates { get; set; } = new Dictionary<String, Dictionary<String, Boolean>>();
+
+        // DataGridViewの行データ(行×列の文字列)。キーは"AttrName|AttrValue"
+        public Dictionary<String, List<List<String>>> Grids { get; set; } = new Dictionary<String, List<List<String>>>();
     }
 
     // *******************************************************************************

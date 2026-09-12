@@ -26,7 +26,7 @@ namespace StandardTemplate
         // ポインタファイルを自動的に作り直す(=ポインタファイルだけ消えても次回起動で自己修復する)
         public static String GetUserDataFolder(String appName)
         {
-            String exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+            String exeDir = Path.GetDirectoryName(GetHostAssembly().Location);
             String pointerPath = Path.Combine(exeDir, PointerFileName);
 
             String dataFolder = TryReadPointerFile(pointerPath);
@@ -51,11 +51,20 @@ namespace StandardTemplate
         // readonlyで既に確定しているため、この呼び出しだけでは今のセッションには反映されない)
         public static void SetUserDataFolder(String appName, String newDataFolder)
         {
-            String exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+            String exeDir = Path.GetDirectoryName(GetHostAssembly().Location);
             String pointerPath = Path.Combine(exeDir, PointerFileName);
 
             Directory.CreateDirectory(newDataFolder);
             WritePointerFile(pointerPath, newDataFolder, appName);
+        }
+
+        // ポインタファイルを置く基準アセンブリ。通常はexe自身(GetEntryAssembly)だが、
+        // MSTest(vstest.console)経由でForm1のコンストラクタが呼ばれるテストではホストの
+        // 都合でGetEntryAssemblyがnullを返すことがあるため、その場合は今このコードを
+        // 実行しているアセンブリ(テスト実行時はテストDLL自身)にフォールバックする
+        private static System.Reflection.Assembly GetHostAssembly()
+        {
+            return System.Reflection.Assembly.GetEntryAssembly() ?? System.Reflection.Assembly.GetExecutingAssembly();
         }
 
         // ポインタファイルの1行目(実データフォルダのパス)を読み取る。
