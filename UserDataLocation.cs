@@ -45,6 +45,19 @@ namespace StandardTemplate
             return dataFolder;
         }
 
+        // ①のポインタファイルを書き換えて、実データフォルダの場所を任意のパスに変更する。
+        // GUI(システムメニュー等)から「保存先フォルダを変更する」機能を作る時に使う想定。
+        // 呼び出し側の責務: 変更は次回起動時から反映される(実行中のuserDataFolderは
+        // readonlyで既に確定しているため、この呼び出しだけでは今のセッションには反映されない)
+        public static void SetUserDataFolder(String appName, String newDataFolder)
+        {
+            String exeDir = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+            String pointerPath = Path.Combine(exeDir, PointerFileName);
+
+            Directory.CreateDirectory(newDataFolder);
+            WritePointerFile(pointerPath, newDataFolder, appName);
+        }
+
         // ポインタファイルの1行目(実データフォルダのパス)を読み取る。
         // ファイルが無い/1行目が空/そのフォルダが実在しない場合はnullを返す
         private static String TryReadPointerFile(String pointerPath)
