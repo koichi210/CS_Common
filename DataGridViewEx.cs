@@ -16,8 +16,15 @@
 //
 // ■有効/無効
 // EnableUndoRedoプロパティで切り替え可能(既定は true = 有効)。
+//
+// ■Ctrl+マウスホイールによる文字/チェックボックスの拡大縮小
+// Ctrlキーを押しながらホイールを回すと、フォントサイズ・行の高さ・
+// チェックボックスのグリフサイズがまとめて拡大縮小される。
+// (Ctrlなしの通常のホイールは今まで通り行スクロールに使われる)
+// ZoomFactorプロパティで現在の倍率を取得/設定でき、ResetZoom()で1.0倍に戻せる。
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace StandardTemplate
@@ -26,6 +33,44 @@ namespace StandardTemplate
     {
         // Ctrl+Z/Ctrl+Yによる元に戻す/やり直すを有効にするかどうか。既定は有効
         public Boolean EnableUndoRedo { get; set; } = true;
+
+        // Ctrl+ホイールでの拡大縮小の下限/上限、および1ノッチあたりの増減量
+        private const float MinZoomFactor = 0.5f;
+        private const float MaxZoomFactor = 3.0f;
+        private const float ZoomStep = 0.1f;
+
+        // チェックボックスのグリフサイズの基準値(等倍時、96DPI相当のピクセル数)
+        private const int BaseCheckBoxSize = 13;
+
+        private float zoomFactor = 1.0f;
+
+        // 拡大縮小の基準となる、コントロール生成直後(デザイナ設定反映後)の元サイズ
+        private Font baseFont;
+        private int baseRowHeight;
+        private int baseColumnHeadersHeight;
+
+        // 現在の拡大率(0.5〜3.0)。Ctrl+ホイールで変化する
+        public float ZoomFactor
+        {
+            get { return zoomFactor; }
+            set
+            {
+                float clamped = Math.Max(MinZoomFactor, Math.Min(MaxZoomFactor, value));
+                if (Math.Abs(clamped - zoomFactor) < 0.0001f)
+                {
+                    return;
+                }
+
+                zoomFactor = clamped;
+                ApplyZoom();
+            }
+        }
+
+        // 拡大率を等倍(1.0倍)に戻す
+        public void ResetZoom()
+        {
+            ZoomFactor = 1.0f;
+        }
 
         // 1件のセル変更を表す(元の値・変更後の値のペア)
         private class CellChange
@@ -56,6 +101,136 @@ namespace StandardTemplate
             this.CellValueChanged += DataGridViewEx_CellValueChanged;
             this.RowsAdded += DataGridViewEx_RowsAdded;
             this.RowsRemoved += DataGridViewEx_RowsRemoved;
+            this.CellPainting += DataGridViewEx_CellPainting;
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            // デザイナで設定されたFont/行の高さ等がすべて反映された直後の値を、
+            // 拡大縮小の基準サイズ(=1.0倍時のサイズ)として覚えておく
+            CaptureBaseMetricsIfNeeded();
+        }
+
+        private void CaptureBaseMetricsIfNeeded()
+        {
+            if (baseFont != null)
+            {
+                return;
+            }
+
+            baseFont = this.Font;
+            baseRowHeight = this.RowTemplate.Height;
+            baseColumnHeadersHeight = this.ColumnHeadersHeight;
+        }
+
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            if (ModifierKeys == Keys.Control)
+            {
+                int steps = e.Delta / SystemInformation.MouseWheelScrollDelta;
+                if (steps != 0)
+                {
+                    ZoomFactor = zoomFactor + steps * ZoomStep;
+                }
+                // Ctrl+ホイールは拡大縮小専用にし、行スクロールへは渡さない
+                return;
+            }
+
+            base.OnMouseWheel(e);
+        }
+
+        // フォントサイズ・行の高さ・ヘッダーの高さを現在のZoomFactorに合わせて更新する
+        private void ApplyZoom()
+        {
+            CaptureBaseMetricsIfNeeded();
+            if (baseFont == null)
+            {
+                return;
+            }
+
+            float newSize = Math.Max(1f, baseFont.Size * zoomFactor);
+            Font oldFont = this.Font;
+            Font newFont = new Font(baseFont.FontFamily, newSize, baseFont.Style);
+
+            this.Font = newFont;
+            this.DefaultCellStyle.Font = newFont;
+            this.ColumnHeadersDefaultCellStyle.Font = newFont;
+            this.RowHeadersDefaultCellStyle.Font = newFont;
+
+            if (oldFont != baseFont)
+            {
+                oldFont.Dispose();
+            }
+
+            int newRowHeight = Math.Max(this.RowTemplate.MinimumHeight, (int)Math.Round(baseRowHeight * zoomFactor));
+            this.RowTemplate.Height = newRowHeight;
+            foreach (DataGridViewRow row in this.Rows)
+            {
+                row.Height = newRowHeight;
+            }
+
+            this.ColumnHeadersHeight = Math.Max(4, (int)Math.Round(baseColumnHeadersHeight * zoomFactor));
+
+            this.Invalidate();
+        }
+
+        // チェックボックス列のセルは、標準描画のままだとグリフが常に固定サイズなので、
+        // 背景/枠線だけ標準描画に任せてグリフ部分だけZoomFactorに応じたサイズで描き直す
+        private void DataGridViewEx_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0)
+            {
+                return;
+            }
+
+            if (!(this.Columns[e.ColumnIndex] is DataGridViewCheckBoxColumn))
+            {
+                return;
+            }
+
+            if (Math.Abs(zoomFactor - 1.0f) < 0.0001f)
+            {
+                // 等倍時は標準描画のほうがOSのテーマに沿った見た目になるので任せる
+                return;
+            }
+
+            e.PaintBackground(e.ClipBounds, true);
+            e.Paint(e.ClipBounds, DataGridViewPaintParts.Border);
+
+            Boolean isChecked = ToCheckBoxChecked(e.Value);
+            int size = Math.Max(4, (int)Math.Round(BaseCheckBoxSize * zoomFactor));
+            Rectangle box = new Rectangle(
+                e.CellBounds.X + (e.CellBounds.Width - size) / 2,
+                e.CellBounds.Y + (e.CellBounds.Height - size) / 2,
+                size,
+                size);
+
+            ButtonState state = isChecked ? ButtonState.Checked : ButtonState.Normal;
+            if (this.Columns[e.ColumnIndex].ReadOnly || this.Rows[e.RowIndex].ReadOnly)
+            {
+                state |= ButtonState.Inactive;
+            }
+
+            ControlPaint.DrawCheckBox(e.Graphics, box, state);
+            e.Handled = true;
+        }
+
+        private static Boolean ToCheckBoxChecked(Object cellValue)
+        {
+            if (cellValue is Boolean)
+            {
+                return (Boolean)cellValue;
+            }
+
+            try
+            {
+                return Convert.ToBoolean(cellValue);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // 複数セルへの変更をまとめて1つのUndo単位にしたい処理の前後で呼ぶ

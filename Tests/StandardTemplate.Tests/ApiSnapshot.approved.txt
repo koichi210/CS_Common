@@ -44,6 +44,9 @@ TYPE public enum StandardTemplate.CaptWindow+MOUSE_EVENT
     ENUM   LEFT_UP = 3
     ENUM   MOVE = 0
 
+TYPE public class StandardTemplate.GenericProfile
+    CTOR   public GenericProfile()
+
 TYPE internal abstract class StandardTemplate.StcBaseForm`1 : Form
     CTOR   protected StcBaseForm`1()
     FIELD  protected StcUtils util
@@ -144,10 +147,12 @@ TYPE internal class StandardTemplate.StcSaveRestore
     METHOD public Boolean LoadXmlFile(String FileName)
     METHOD public Boolean SaveSetting(String SaveFileName)
     METHOD public Boolean SaveXmlFile(String file_name, String version_no = "1")
+    METHOD public GenericProfile BuildGenericProfile()
     METHOD public Int32 LoadXmlVersion(String FileName)
     METHOD public Int32 LoadXmlVersion(XmlDocument document)
     METHOD public String LoadXmlFile(String FileName, String AttrName, String AttrValue, String DefaultElement = "")
     METHOD public String[] LoadXmlFileList(String FileName, String AttrName, String AttrValue)
+    METHOD public Void ApplyGenericProfile(GenericProfile profile)
     METHOD public Void RegistCtrl(String AttrName, String AttrValue, CheckBox Ctrl, String ElementValue = "")
     METHOD public Void RegistCtrl(String AttrName, String AttrValue, ComboBox Ctrl, String ElementValue = "")
     METHOD public Void RegistCtrl(String AttrName, String AttrValue, HScrollBar Ctrl, Int32 ElementValue = 0)
@@ -267,4 +272,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 17 types / 231 members
+# total: 18 types / 234 members
