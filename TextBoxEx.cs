@@ -16,6 +16,12 @@
 // ■拡張ポイント
 // PathDroppedイベントで、反映後のパスを受け取れる
 // (反映そのものを止めたい場合はイベント内でCancelをtrueにする)。
+//
+// ■↑/↓キーでの数値インクリメント/デクリメント
+// EnableUpDownIncrement(既定false)をtrueにすると、↑キーで1増加、↓キーで1減少する
+// (EventRecorderのtextBox_Loopと同じ挙動)。値は1未満にはならない
+// (ループ数0以下は意味を持たないユースケースを想定した下限)。既定はOFFなので、
+// 既存のTextBoxEx利用箇所(パス入力欄等)には影響しない。
 using System;
 using System.IO;
 using System.Windows.Forms;
@@ -28,6 +34,9 @@ namespace StandardTemplate
         // パスに変換してからTextへ反映する。既定はtrue(フォルダパス欄としての利用を想定)
         public Boolean FolderPathOnly { get; set; } = true;
 
+        // trueの場合、↑/↓キーでテキストの数値を1ずつ増減できるようにする。既定はfalse
+        public Boolean EnableUpDownIncrement { get; set; } = false;
+
         // ドロップによってTextへパスが反映された直後に発生する
         public event EventHandler<PathDroppedEventArgs> PathDropped;
 
@@ -36,6 +45,31 @@ namespace StandardTemplate
             this.AllowDrop = true;
             this.DragEnter += TextBoxEx_DragEnter;
             this.DragDrop += TextBoxEx_DragDrop;
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            if (EnableUpDownIncrement && (e.KeyCode == Keys.Up || e.KeyCode == Keys.Down))
+            {
+                int delta = (e.KeyCode == Keys.Up) ? 1 : -1;
+                StepValue(delta);
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                return;
+            }
+
+            base.OnKeyDown(e);
+        }
+
+        // 現在のTextを整数として1未満にならない範囲でdeltaだけ増減する
+        private void StepValue(int delta)
+        {
+            int current;
+            int.TryParse(this.Text, out current);
+            int next = Math.Max(1, (current <= 0 ? 1 : current) + delta);
+
+            this.Text = next.ToString();
+            this.SelectionStart = this.Text.Length;
         }
 
         private void TextBoxEx_DragEnter(object sender, DragEventArgs e)
