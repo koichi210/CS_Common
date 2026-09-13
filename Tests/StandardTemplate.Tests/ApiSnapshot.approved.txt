@@ -47,6 +47,11 @@ TYPE public enum StandardTemplate.CaptWindow+MOUSE_EVENT
 TYPE public class StandardTemplate.GenericProfile
     CTOR   public GenericProfile()
 
+TYPE public class StandardTemplate.NaturalStringComparer
+    CTOR   public NaturalStringComparer()
+    FIELD  public static readonly NaturalStringComparer Instance
+    METHOD public Int32 Compare(String x, String y)
+
 TYPE internal abstract class StandardTemplate.StcBaseForm`1 : Form
     CTOR   protected StcBaseForm`1()
     FIELD  protected StcUtils util
@@ -272,4 +277,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 18 types / 234 members
+# total: 19 types / 237 members
