@@ -22,17 +22,7 @@ using System.Windows.Forms;
 
 namespace StandardTemplate
 {
-    // PathDroppedイベントの引数。反映されるパスと、反映を取りやめるためのCancelを持つ
-    public class PathDroppedEventArgs : EventArgs
-    {
-        public String Path { get; }
-        public Boolean Cancel { get; set; }
-
-        public PathDroppedEventArgs(String path)
-        {
-            Path = path;
-        }
-    }
+    // PathDroppedEventArgsは[[_Common/PathDroppedEventArgs.cs]]で定義(TextBoxExと共有のため分離)
 
     public class ComboBoxEx : ComboBox
     {
