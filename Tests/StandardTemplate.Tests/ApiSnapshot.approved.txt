@@ -159,6 +159,8 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public Boolean IsNotNumberKey(KeyPressEventArgs e)
     METHOD public Boolean IsWindowsPath(String Path)
     METHOD public Boolean RemoveReadonlyAttribute(String FileName)
+    METHOD public Boolean SetClipboardData(Object Data)
+    METHOD public Boolean SetClipboardText(String Text)
     METHOD public FILE_PATH_TYPE GetFilePathType(String FilePath)
     METHOD public Int32 GetInteger(String Text)
     METHOD public Int64 GetNumber(String SrcString, Int32 DefaultDigitNum = 1)
@@ -219,4 +221,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 15 types / 187 members
+# total: 15 types / 189 members

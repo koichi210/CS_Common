@@ -733,7 +733,51 @@ namespace StandardTemplate
 
             // コピー
             String TargetName = GetSelectName(ListBoxCtrl, RootPath);
-            Clipboard.SetText(TargetName);
+            SetClipboardText(TargetName);
+        }
+
+        // クリップボードは他のアプリが掴んでいる間は開けず、Clipboard.SetTextが例外になる
+        // (ExternalException「要求されたクリップボード操作に成功しませんでした」)。
+        // 少し待って数回やり直し、それでも駄目ならfalseを返す(ツールを落とさない)
+        public Boolean SetClipboardText(String Text)
+        {
+            return RetryClipboard(() =>
+            {
+                // SetTextは空文字を渡すと例外になるため、空のときはクリアする
+                if (String.IsNullOrEmpty(Text))
+                {
+                    Clipboard.Clear();
+                }
+                else
+                {
+                    Clipboard.SetText(Text);
+                }
+            });
+        }
+
+        public Boolean SetClipboardData(Object Data)
+        {
+            return RetryClipboard(() => Clipboard.SetDataObject(Data));
+        }
+
+        private Boolean RetryClipboard(Action Operation)
+        {
+            const int RetryCount = 5;
+            const int RetryWaitMsec = 100;
+
+            for (int i = 0; i < RetryCount; i++)
+            {
+                try
+                {
+                    Operation();
+                    return true;
+                }
+                catch (System.Runtime.InteropServices.ExternalException)
+                {
+                    Thread.Sleep(RetryWaitMsec);
+                }
+            }
+            return false;
         }
 
         // リストコントロールの選択項目をコピー
@@ -749,7 +793,7 @@ namespace StandardTemplate
             String TargetName = GetSelectListName(ListViewCtrl, RootPath, index);
             if (!TargetName.Equals(String.Empty))
             {
-                Clipboard.SetText(TargetName);
+                SetClipboardText(TargetName);
             }
         }
 
