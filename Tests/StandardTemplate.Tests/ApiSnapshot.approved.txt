@@ -62,26 +62,6 @@ TYPE internal abstract class StandardTemplate.StcBaseForm`1 : Form
     FIELD  protected TSaveRestore sr
     METHOD protected Void InitializeCommonSettings(Icon FormIcon)
 
-TYPE public class StandardTemplate.StcCheck
-    CTOR   public StcCheck()
-    METHOD public Boolean IsExistCygwinDir(String CygwinDir = "")
-    METHOD public Boolean IsExistRemoteProcFile(String BaseDir = "")
-    METHOD public Boolean IsPossibleCygwinBin(String BinName = "")
-
-TYPE internal class StandardTemplate.StcCreateScript
-    CTOR   public StcCreateScript()
-    METHOD public String CommonHeader()
-    METHOD public String GetExecCmdWithExistFile(String FileName, String CommandName = "")
-    METHOD public String GetGrepWord(String GrepWord, String FileName, String OutputLine)
-    METHOD public String LocalScriptCp(String Src, String Dest)
-    METHOD public String LocalScriptDiff(String SrcFile, String DestFile)
-    METHOD public String LocalScriptSedDelete(String Target, String FileName)
-    METHOD public String LocalScriptSedInsert(String Target, String Add, String FileName)
-    METHOD public String LocalScriptSedReplace(String Src, String Dest, String FileName)
-    METHOD public String LocalScriptSedReplaceLine(String Src, String Dest, String FileName)
-    METHOD public String LocalScriptSedReplaceTargetLine(String Target, String Src, String Dest, String FileName)
-    METHOD public String LocalScriptShell(String Shell, String Param = "", Boolean IsBackGround = false)
-
 TYPE public class StandardTemplate.StcDebug
     CTOR   public StcDebug()
     CTOR   public StcDebug(Boolean IsMode)
@@ -95,16 +75,6 @@ TYPE public class StandardTemplate.StcDebug
     METHOD public Void SetWriteTime(Boolean WriteTime)
     METHOD public Void WriteData(String Data, Boolean IsAppend = true)
     METHOD public Void WriteDataInNewFile(String Data, String FilenameSuffixStr = "", String Extension = "txt")
-
-TYPE public class StandardTemplate.StcDraw
-    METHOD protected virtual Void Finalize()
-    METHOD public Void AdjustScale(Size ImgSize)
-    METHOD public Void DrawFillRect(Brush color, Int32 x, Int32 y, Int32 width, Int32 height)
-    METHOD public Void DrawFillRectWidthBorderLine(Brush color, Int32 x, Int32 y, Int32 width, Int32 height)
-    METHOD public Void DrawRectBorderLine(Int32 x, Int32 y, Int32 width, Int32 height)
-    METHOD public Void FillBackground(Brush color)
-    METHOD public Void SetPenColor(Brush color)
-    METHOD public Void SetPenWidth(Int32 width)
 
 TYPE public class StandardTemplate.StcException : Exception
     CTOR   protected StcException(SerializationInfo info, StreamingContext context)
@@ -120,15 +90,11 @@ TYPE public class StandardTemplate.StcFileInputOutput
     METHOD public Boolean DeleteDirectoryAndFile(String DeletePath)
     METHOD public Boolean DeleteFileWithRemoveReadonlyAttribute(String DeleteFile)
     METHOD public Boolean DetectFileData(String FilePath, String DetectWord)
-    METHOD public Boolean FileCopy(String SourcePath, String TargetPath)
+    METHOD public Boolean EnsureDirectory(String Path, Boolean IsAutoCreate = false)
     METHOD public Boolean FileMove(String SourcePath, String TargetPath)
-    METHOD public Boolean IsAuthorityOverwrite(String FilePath)
-    METHOD public Boolean IsExistDirectory(String Path, Boolean IsAutoCreate = false)
-    METHOD public Boolean IsExistSubDirectory(String Path)
     METHOD public Boolean IsSaveValidFilePath(String FilePathName)
     METHOD public Boolean RemoveReadonlyAttribute(String FileName)
     METHOD public String CreateTempFile(String Ext = "")
-    METHOD public String GetDirectoryPath(String Title = "フォルダを指定してください。", String DefaultPath = "", Boolean IsNewFolder = false)
     METHOD public String GetFirstPathName(String Path)
     METHOD public String GetLastPathName(String Path)
     METHOD public String LoadFile(String FilePath)
@@ -144,10 +110,6 @@ TYPE public class StandardTemplate.StcFileInputOutput
 TYPE public enum StandardTemplate.StcFileInputOutput+ENCORD_TYPE
     ENUM   EUC_JP = 1
     ENUM   SHIFT_JIS = 0
-
-TYPE public class StandardTemplate.StcImage
-    CTOR   public StcImage()
-    METHOD public Size GetImageSize(String FilePath)
 
 TYPE internal class StandardTemplate.StcSaveRestore
     CTOR   public StcSaveRestore()
@@ -172,7 +134,6 @@ TYPE internal class StandardTemplate.StcSaveRestore
     METHOD public Void RegistCtrlList(String AttrName, String AttrValue, ComboBox Ctrl, String ElementValue = "")
     METHOD public Void RegistSecureCtrl(String AttrName, String AttrValue, TextBox Ctrl, String ElementValue = "")
     METHOD public Void SaveXmlFile(XmlDocument document, String version_no = "1")
-    METHOD public Void SaveXmlManageParam(String AttrName, String AttrValue, Byte[] Value)
     METHOD public Void SaveXmlParam(String AttrName, String AttrValue, Int32 Number)
     METHOD public Void SaveXmlParamAll(String AttrName, String AttrValue, String[] StrArray)
     METHOD public Void SaveXmlString(String AttrName, String AttrValue, String Text)
@@ -186,30 +147,16 @@ TYPE public class StandardTemplate.StcSecure
     METHOD public String Decode(String str, Byte[] DesKey, Byte[] DesIV, Byte[] cryptData)
     METHOD public String Encode(String str, out Byte[] DesKey, out Byte[] DesIV, out Byte[] cryptData)
 
-TYPE internal class StandardTemplate.StcSleep
-    CTOR   public StcSleep()
-    METHOD public Boolean StartSleep()
-    METHOD public Void SetSleepCycleMsec(UInt32 msec)
-    METHOD public Void SetSleepTimeMsec(UInt32 msec)
-    METHOD public Void SetSleepTimeSec(UInt32 sec)
-    METHOD public Void StopSleep()
-
 TYPE public class StandardTemplate.StcUtils
     CTOR   public StcUtils()
-    METHOD public Boolean DropFileNames(DragEventArgs e, TextBox TextCtrl, Boolean IsClear = false)
-    METHOD public Boolean ExecuteFileSupportReadOnly(String ExecPath, KeyEventArgs e)
     METHOD public Boolean ExecutePath(String ExecPath, Boolean NoWindow = false)
     METHOD public Boolean ExecutePath(String ExecPath, KeyEventArgs e)
     METHOD public Boolean ExecutePath(String ExecPath, String Param, Boolean NoWindow = false)
     METHOD public Boolean GetBoolean(String Text, String DetectWord = "True")
-    METHOD public Boolean GetDataGridCellBool(DataGridView dgv, Int32 RowCount, Int32 ColumnCount)
-    METHOD public Boolean IsAliveHost(String HostName)
     METHOD public Boolean IsExistFile(String FilePath, Boolean IsNoticeExceptMsg = false, String ExceptMsgStr = "")
     METHOD public Boolean IsExistFileNameInEnvironment(String FileName = "")
-    METHOD public Boolean IsExistFiles(String[] Filename, String BaseDir = "")
     METHOD public Boolean IsExistPath(String FilePath)
-    METHOD public Boolean IsKeyPressNumber(KeyPressEventArgs e)
-    METHOD public Boolean IsStartingProcess(String ProcessName, String MachineName = "")
+    METHOD public Boolean IsNotNumberKey(KeyPressEventArgs e)
     METHOD public Boolean IsWindowsPath(String Path)
     METHOD public Boolean RemoveReadonlyAttribute(String FileName)
     METHOD public FILE_PATH_TYPE GetFilePathType(String FilePath)
@@ -235,12 +182,8 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public String ChangeWindowsPath2CygwinPath(String OldPath)
     METHOD public String ChangeWindowsPath2LinuxPath(String OldPath)
     METHOD public String FindStringFromComboBox(ComboBox CmbCtrl, String SrcName, String TrimName = "", Boolean IsReverse = false)
-    METHOD public String FindStringFromListView(ListView LvCtrl, String SrcName, String TrimName = "")
-    METHOD public String GetAbsolutePath(String RelativePath)
     METHOD public String GetDataGridCell(DataGridView dgv, Int32 RowCount, Int32 ColumnCount)
     METHOD public String GetDropListLinear(DragEventArgs e)
-    METHOD public String GetIPAddress()
-    METHOD public String GetLsfLightHostName(String[] HostNameList, String DefaultHostName = "")
     METHOD public String GetSelectListName(ListView ListViewCtrl, String RootPath = "", Int32 index = 0)
     METHOD public String GetSelectName(ListBox ListBoxCtrl, String RootPath = "")
     METHOD public String TrimDuplication(String Source, String Delimiter)
@@ -249,11 +192,9 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public String[] ChangeLinuxPath2WindowsPath(String[] OldPathArray)
     METHOD public String[] ChangeStrLinear2Array(String StrLinear, String Delimiter, StringSplitOptions Opt = 1)
     METHOD public String[] ChangeWindowsPath2LinuxPath(String[] OldPathArray)
-    METHOD public String[] GetComboBoxList(ComboBox ComboCtrl)
     METHOD public String[] GetDropListArray(DragEventArgs e)
     METHOD public String[] GetStrArrayFromListBox(SelectedObjectCollection ListBoxSelected)
     METHOD public String[] GetStringArray(ComboBox CbCtrl)
-    METHOD public String[] GetSubDirFileList(String TopDirPath, String SubDirPath, String TargetFile)
     METHOD public String[] List2Array(List<String> StringList)
     METHOD public String[] RemoveStringArray(String[] Sources, String Remove)
     METHOD public String[] TrimDuplication(String[] SourceArray)
@@ -261,13 +202,10 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public Void CopyToClipboard(KeyEventArgs e, ListView ListViewCtrl, String RootPath = "", Int32 index = 0)
     METHOD public Void ExecutePathWithWait(String Path, String Param = "", Boolean NoWindow = false)
     METHOD public Void ModifyCombBoxList(ComboBox ComboCtrl)
-    METHOD public Void ProcessKill(String ProcessName)
     METHOD public Void SelectAll(KeyEventArgs e)
     METHOD public Void SelectAll(TextBox TextBoxCtrl, KeyEventArgs e)
     METHOD public Void SetComboBoxFromArray(ComboBox ComboCtrl, String[] Array, String RemoveString = "", String LimitString = "")
     METHOD public Void SetComboBoxFromArraySubString(ComboBox ComboCtrl, String[] Array, Int32 StartIdx, String EndDelimiter = "", String LimitString = "", Boolean IsReverse = false)
-    METHOD public Void SetComboBoxFromTextList(ref ComboBox ComboCtrl, String TextList, String RemoveString = "")
-    METHOD public Void SetComboBoxString(ref ComboBox CbCtrl, String[] StringArray)
     METHOD public Void SetComboBoxText(ComboBox ComboCtrl, String DefaultProfileName)
     METHOD public Void SetCurrentDirectory()
     METHOD public Void SetDataGridCell(DataGridView dgv, Int32 RowCount, Int32 ColumnCount, String Val)
@@ -281,4 +219,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 20 types / 239 members
+# total: 15 types / 187 members

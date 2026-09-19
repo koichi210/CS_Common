@@ -119,47 +119,6 @@ namespace StandardTemplate
             return p;
         }
 
-        // プロセス強制終了
-        public void ProcessKill(String ProcessName)
-        {
-            Process[] processes = Process.GetProcesses();
-            foreach (Process proc in processes)
-            {
-                if (proc.ProcessName == ProcessName)
-                {
-                    // プロセスを強制終了させる
-                    proc.Kill();
-                }
-            }
-        }
-
-        // プロセス起動中か？
-        public Boolean IsStartingProcess(String ProcessName, String MachineName = "")
-        {
-            Boolean IsStarting = false;
-            String TargetProcessName = Path.GetFileNameWithoutExtension(ProcessName);
-
-            Process[] hProcesses = Process.GetProcesses();
-
-            // 他PCのプロセスを取得する場合
-            if (MachineName != String.Empty)
-            {
-                hProcesses = Process.GetProcesses(MachineName);
-            }
-
-            // 取得できたプロセスからプロセス名を取得する
-            foreach (Process hProcess in hProcesses)
-            {
-                if (hProcess.ProcessName == TargetProcessName)
-                {
-                    IsStarting = true;
-                    break;
-                }
-            }
-
-            return IsStarting;
-        }
-
         #endregion
 
         #region 存在チェック・ファイル実行
@@ -194,28 +153,6 @@ namespace StandardTemplate
             return false;
         }
 
-        public Boolean IsExistFiles(String[] Filename, String BaseDir = "")
-        {
-            Boolean IsExist = true;
-
-            // BaseDirの終端に"\"を付加
-            if (BaseDir != String.Empty)
-            {
-                BaseDir = BaseDir.TrimEnd('\\') + '\\';
-            }
-
-            for (int i = 0; i < Filename.Length; i++)
-            {
-                if (!File.Exists(BaseDir + Filename[i]))
-                {
-                    IsExist = false;
-                    break;
-                }
-            }
-
-            return IsExist;
-        }
-
         // パスが有効かチェック
         public Boolean IsExistPath(String FilePath)
         {
@@ -232,9 +169,7 @@ namespace StandardTemplate
             return false;
         }
 
-        // StcFileInputOutputにも同名の"IsExistDirectory"(自動作成の確認ダイアログを出す版)が
-        // あって紛らわしかった。こちらは本番の17プロジェクトからは一度も呼ばれておらず、
-        // IsExistPath内部からしか使われていなかったため、公開APIから外してprivateにした。
+        // 存在するかを見るだけ(作成はしない)。IsExistPath内部からのみ使う
         private Boolean IsExistDirectory(String DirectoryPath, Boolean IsNoticeExceptMsg = false, String ExceptMsgStr = "")
         {
             if (Directory.Exists(DirectoryPath))
@@ -282,11 +217,6 @@ namespace StandardTemplate
             return false;
         }
 
-        public String GetAbsolutePath(String RelativePath)
-        {
-            return Path.GetFullPath(RelativePath);
-        }
-
         // ファイルパス実行
         public Boolean ExecutePath(String ExecPath, Boolean NoWindow = false)
         {
@@ -332,26 +262,6 @@ namespace StandardTemplate
             }
 
             return ExecutePath(ExecPath);
-        }
-
-        // ファイルパス実行 With 読み取り専用属性の解除可能
-        public Boolean ExecuteFileSupportReadOnly(String ExecPath, KeyEventArgs e)
-        {
-            if (e == null)
-            {
-                return false;
-            }
-
-            if (e.KeyCode != Keys.Enter)
-            {
-                // Enter押下じゃない
-                return false;
-            }
-
-            RemoveReadonlyAttribute(ExecPath);
-            ExecutePath(ExecPath);
-
-            return true;
         }
 
         // 読み取り属性解除。以前はStcFileInputOutputをここでnewして使っており、
@@ -635,31 +545,6 @@ namespace StandardTemplate
             return Sources.OrderBy(i => Guid.NewGuid()).ToArray();
         }
 
-        // LSF簡易版。接続可能なホストをランダムに選定
-        public String GetLsfLightHostName(String[] HostNameList, String DefaultHostName = "")
-        {
-            String HostName = DefaultHostName;
-
-            // ランダムに並べ替え
-            HostNameList = AssortList(HostNameList);
-
-            // 接続可能なホストを検索
-            foreach (String CurrentHostName in HostNameList)
-            {
-                if (CurrentHostName == String.Empty)
-                {
-                    continue;
-                }
-
-                if (IsAliveHost(CurrentHostName))
-                {
-                    HostName = CurrentHostName;
-                    break;
-                }
-            }
-            return HostName;
-        }
-
         // 特定の文字列を削除
         public String[] RemoveStringArray(String[] Sources, String Remove)
         {
@@ -685,29 +570,6 @@ namespace StandardTemplate
         public String[] List2Array(List<String> StringList)
         {
             return StringList.ToArray();
-        }
-
-        // IPアドレス取得
-        public String GetIPAddress()
-        {
-            String hostname = Dns.GetHostName();
-            IPAddress[] adrList = Dns.GetHostAddresses(hostname);
-
-            return adrList[adrList.Length - 1].ToString();
-        }
-
-        public Boolean IsAliveHost(String HostName)
-        {
-            Boolean IsAlive = true;
-            String output;
-            ExecuteProcess(out output, "ping", "-n 1 " + HostName);
-
-            // 該当の文字列があったら、切断されてる
-            if (output.IndexOf("見つかりませんでした") != -1)
-            {
-                IsAlive = false;
-            }
-            return IsAlive;
         }
 
         // 画像サイズ取得
@@ -749,21 +611,6 @@ namespace StandardTemplate
 
             // 全選択
             SendKeys.SendWait("{HOME}+{END}");
-        }
-
-        public String[] GetSubDirFileList(String TopDirPath, String SubDirPath, String TargetFile)
-        {
-            String[] FileList = { "" };
-
-            TopDirPath += @"\";     // "\" もRemoveしたいので、TopDirPathにAddする
-            String FullPath = TopDirPath + SubDirPath;
-
-            if (Directory.Exists(FullPath))
-            {
-                FileList = Directory.GetFiles(FullPath, TargetFile, SearchOption.AllDirectories);
-                FileList = RemoveStringArray(FileList, TopDirPath);
-            }
-            return FileList;
         }
 
         public String ChangeStrArray2Linear(String[] StrArray, String Suffix)
@@ -814,15 +661,6 @@ namespace StandardTemplate
         {
             String[] CombBoxArray = CbCtrl.Items.Cast<String>().ToArray();
             return CombBoxArray;
-        }
-
-        public void SetComboBoxString(ref ComboBox CbCtrl, String[] StringArray)
-        {
-            // DataSourceを設定すると、以降ItemsAddができなくなる
-            CbCtrl.DataSource = StringArray;
-
-            CbCtrl.Items.Clear();
-            CbCtrl.Items.AddRange(StringArray);
         }
 
         public String TrimEndGarbage(String Source)
@@ -921,25 +759,6 @@ namespace StandardTemplate
             // 以前は改行区切りの文字列に連結してから配列へ分割し直す遠回りな実装だった。
             // 素直にLINQで直接配列へ変換する。
             return ListBoxSelected.Cast<object>().Select(Item => Item.ToString()).ToArray();
-        }
-
-        // 文字列をコンボボックスにセット
-        public void SetComboBoxFromTextList(ref ComboBox ComboCtrl, String TextList, String RemoveString = "")
-        {
-            String[] Array = TextList.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-            SetComboBoxFromArray(ComboCtrl, Array, RemoveString);
-        }
-
-        // コンボボックスの選択肢を文字列の配列で取得
-        public String[] GetComboBoxList(ComboBox ComboCtrl)
-        {
-            StringBuilder ComboBoxStr = new StringBuilder();
-            for (int i = 0; i < ComboCtrl.Items.Count; i++)
-            {
-                ComboBoxStr.Append(ComboCtrl.Items[i].ToString()).Append(Environment.NewLine);
-            }
-            return ComboBoxStr.ToString().Split(new[] { Environment.NewLine }, StringSplitOptions.None);
         }
 
         // プロファイルをコンボボックスにリストアップ
@@ -1138,77 +957,10 @@ namespace StandardTemplate
             //ComboCtrl.DataSource = CombBoxArray;
         }
 
-        // リストビューの中から目的の文字列を探す
-        public String FindStringFromListView(ListView LvCtrl, String SrcName, String TrimName = "")
+        // 数字以外のキーならtrue(KeyPressEventArgs.Handledにそのまま入れて入力を弾く用途)
+        public Boolean IsNotNumberKey(KeyPressEventArgs e)
         {
-            String SerchName = SrcName;
-            String DestName = "";
-
-            // SrcTrimNameが設定されていたら、特定の文字列で区切る
-            if (TrimName != String.Empty)
-            {
-                int FileNameidx = SrcName.IndexOf(TrimName);
-                if (0 <= FileNameidx)
-                {
-                    SerchName = SrcName.Substring(0, FileNameidx);
-                }
-            }
-
-            for (int i = 0; i < LvCtrl.Items.Count; i++)
-            {
-                String LvString = LvCtrl.Items[i].ToString();
-                if (LvString.IndexOf(SerchName) != -1)
-                {
-                    DestName = LvString;
-                    break;
-                }
-            }
-
-            return DestName;
-        }
-
-        // ドロップされたファイルをコントロールにセット
-        public Boolean DropFileNames(DragEventArgs e, TextBox TextCtrl, Boolean IsClear = false)
-        {
-            Boolean IsApply = false;
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                String[] fileName = (String[])e.Data.GetData(DataFormats.FileDrop, false);
-
-                // TextBox.Textへ毎回書き込むとその都度コントロールの再描画が走るため、
-                // StringBuilderに溜めてから最後に1回だけ書き込む。
-                StringBuilder TextBuilder = new StringBuilder(IsClear ? "" : TextCtrl.Text);
-
-                for (int i = 0; i < fileName.Length; i++)
-                {
-                    TextBuilder.Append(fileName[i]).Append(Environment.NewLine);
-                }
-                TextCtrl.Text = TextBuilder.ToString();
-                IsApply = true;
-            }
-
-            return IsApply;
-        }
-
-        public Boolean IsKeyPressNumber(KeyPressEventArgs e)
-        {
-            Boolean IsNumber = false;
-            if (e.KeyChar < '0' || e.KeyChar > '9')
-            {
-                IsNumber = true;
-            }
-            return IsNumber;
-        }
-
-        public Boolean GetDataGridCellBool(DataGridView dgv, int RowCount, int ColumnCount)
-        {
-            Boolean IsTrue = false;
-            String CellData = GetDataGridCell(dgv, RowCount, ColumnCount);
-            if (CellData.Equals("True"))
-            {
-                IsTrue = true;
-            }
-            return IsTrue;
+            return e.KeyChar < '0' || e.KeyChar > '9';
         }
 
         public void SetDataGridCell(DataGridView dgv, int RowCount, int ColumnCount, String Val)
@@ -1664,46 +1416,44 @@ namespace StandardTemplate
                 return ElementValue;
             }
 
-            foreach (XmlElement element in document.DocumentElement)
+            foreach (XmlElement element in FindElements(document, AttrName, AttrValue, false))
             {
-                String attribute = "";
-                attribute = element.GetAttribute(AttrName);
-                if (attribute != String.Empty)
-                {
-                    if (attribute.IndexOf(AttrValue) != -1)
-                    {
-                        ElementValue = element.InnerText;
-                        break;
-                    }
-                }
+                return element.InnerText;
             }
             return ElementValue;
+        }
+
+        // 属性値が一致する要素を順に返す(IsFullMatchがfalseなら部分一致)
+        private static IEnumerable<XmlElement> FindElements(XmlDocument document, String AttrName, String AttrValue, Boolean IsFullMatch)
+        {
+            foreach (XmlElement element in document.DocumentElement)
+            {
+                String attribute = element.GetAttribute(AttrName);
+                Boolean IsMatch = IsFullMatch
+                    ? attribute.Equals(AttrValue)
+                    : (attribute != String.Empty && attribute.IndexOf(AttrValue) != -1);
+                if (IsMatch)
+                {
+                    yield return element;
+                }
+            }
         }
 
         // コントロール読み込み[個別&リスト]
         public String[] LoadXmlFileList(String FileName, String AttrName, String AttrValue)
         {
-            String[] StringArray = new String[] { };
             XmlDocument document = TryLoadXmlDocument(FileName);
             if (document == null)
             {
-                return StringArray;
+                return new String[] { };
             }
 
-            foreach (XmlElement element in document.DocumentElement)
+            List<String> Values = new List<String>();
+            foreach (XmlElement element in FindElements(document, AttrName, AttrValue, false))
             {
-                String text = element.InnerText;
-                String attribute = element.GetAttribute(AttrName);
-                if (attribute != String.Empty)
-                {
-                    if (attribute.IndexOf(AttrValue) != -1)
-                    {
-                        Array.Resize(ref StringArray, StringArray.Length + 1);
-                        StringArray[StringArray.Length - 1] = text;
-                    }
-                }
+                Values.Add(element.InnerText);
             }
-            return StringArray;
+            return Values.ToArray();
         }
 
         // 設定ファイル読み込み[TextCtrl]
@@ -1714,7 +1464,7 @@ namespace StandardTemplate
         /// 種類ごとに同じ形の for ループが並んでいたのを 1 つにまとめたもの。
         /// 種類による違いは「どう照合するか(IsMatch)」と「何を代入するか(Apply)」だけ。
         /// </summary>
-        private Boolean LoadRegisteredCtrl<T>(T[] RegisteredCtrl, Func<T, Boolean> IsMatch, Action<T> Apply)
+        private Boolean LoadRegisteredCtrl<T>(T[] RegisteredCtrl, Func<T, Boolean> IsMatch, Action<T> Apply) where T : OriginDB
         {
             for (int i = 0; i < RegisteredCtrl.Length; i++)
             {
@@ -1940,16 +1690,10 @@ namespace StandardTemplate
         public int LoadXmlVersion(XmlDocument document)
         {
             int VersionNo = 0;
-            foreach (XmlElement element in document.DocumentElement)
+            foreach (XmlElement element in FindElements(document, VersionAttrName, VersionKeyName, true))
             {
-                string attribute = element.GetAttribute(VersionAttrName);
-                string text = element.InnerText;
-
-                if (attribute.Equals(VersionKeyName))
-                {
-                    int.TryParse(text, out VersionNo);
-                    break;
-                }
+                int.TryParse(element.InnerText, out VersionNo);
+                break;
             }
             return VersionNo;
         }
@@ -2066,7 +1810,8 @@ namespace StandardTemplate
         }
 
         // ファイル保存[byte]
-        public void SaveXmlManageParam(String AttrName, String AttrValue, byte[] Value)
+        // 暗号化した管理情報(鍵・IV・データ)の保存にしか使わないのでprivate
+        private void SaveXmlManageParam(String AttrName, String AttrValue, byte[] Value)
         {
             if (Value == null)
             {
@@ -2168,11 +1913,7 @@ namespace StandardTemplate
                 {
                     for (int ColumnCount = 0; ColumnCount < RegDataGridCtrl[i].Ctrl.ColumnCount; ColumnCount++)
                     {
-                        String CellValue = "";
-                        if (RegDataGridCtrl[i].Ctrl.Rows[RowCount].Cells[ColumnCount].Value != null)
-                        {
-                            CellValue = RegDataGridCtrl[i].Ctrl.Rows[RowCount].Cells[ColumnCount].Value.ToString();
-                        }
+                        String CellValue = util.GetDataGridCell(RegDataGridCtrl[i].Ctrl, RowCount, ColumnCount);
 
                         SaveXmlString(RegDataGridCtrl[i].AttrName,
                             RegDataGridCtrl[i].AttrValue + "_" + RowCount.ToString() + "-" + ColumnCount.ToString(),
@@ -2261,8 +2002,7 @@ namespace StandardTemplate
                     List<String> row = new List<String>();
                     for (int c = 0; c < RegDataGridCtrl[i].Ctrl.ColumnCount; c++)
                     {
-                        Object cellValue = RegDataGridCtrl[i].Ctrl.Rows[r].Cells[c].Value;
-                        row.Add(cellValue == null ? "" : cellValue.ToString());
+                        row.Add(util.GetDataGridCell(RegDataGridCtrl[i].Ctrl, r, c));
                     }
                     rows.Add(row);
                 }
@@ -2500,25 +2240,11 @@ namespace StandardTemplate
         }
 
         // 文字コード変換[UTF8→Sjis]
+        // .NET文字列は内部的に常にUTF-16なので、変換は「読み込み時のエンコード指定」と
+        // 「書き込み時のエンコード指定(SaveFileがShift_JIS固定)」だけで完了する
         public Boolean ChangeStringCodeUTF2SJIS(String InFileName, String OutFileName)
         {
-            // .NET文字列は内部的に常にUTF-16なので、変換すべきは「読み込み時のエンコード指定」と
-            // 「書き込み時のエンコード指定」だけで十分。以前はここでさらにEncoding.Convertを使って
-            // バイト列を変換していたが、結果(sjis_str)がどこにも使われておらず、SaveFile内部の
-            // StreamWriterがShift_JISで書き込む時点ですでに変換は完了しているため、無駄な計算だった。
-            Encoding src = Encoding.GetEncoding("utf-8");
-
-            String FileData = "";
-            if (File.Exists(InFileName))
-            {
-                using (StreamReader sr = new StreamReader(InFileName, src))
-                {
-                    FileData = sr.ReadToEnd();
-                }
-            }
-
-            SaveFile(OutFileName, FileData);
-
+            SaveFile(OutFileName, LoadFileWithEncoding(InFileName, Encoding.GetEncoding("utf-8")));
             return true;
         }
 
@@ -2531,62 +2257,8 @@ namespace StandardTemplate
                 return false;
             }
 
-            // 以前はStream/BinaryReader/BinaryWriterを手動で開閉していた(しかもClose()を
-            // 2回ずつ呼ぶ無駄もあった)。File.ReadAllBytes/WriteAllBytesに置き換えて
-            // シンプルにした。挙動(EUC-JPとして読んでSHIFT-JISのバイト列で書き出す)は
-            // 変えていない。
-            Byte[] SourceBytes = File.ReadAllBytes(InFileName);
-            String Text = Encoding.GetEncoding("EUC-JP").GetString(SourceBytes);
-            Byte[] DestBytes = Encoding.GetEncoding("SHIFT-JIS").GetBytes(Text);
-
-            File.WriteAllBytes(OutFileName, DestBytes);
-
+            SaveFile(OutFileName, LoadFileWithEncoding(InFileName, Encoding.GetEncoding("EUC-JP")));
             return true;
-        }
-
-        // ファイルを更新できるかチェック
-        public Boolean IsAuthorityOverwrite(String FilePath)
-        {
-            if (!utils.IsExistPath(FilePath))
-            {
-                // ファイルが存在しなければロックされていないので、更新できる
-                return true;
-            }
-
-            try
-            {
-                using (File.Open(FilePath, FileMode.Open, FileAccess.Read))
-                {
-                }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        // フォルダパス取得ダイアログ
-        public String GetDirectoryPath(String Title = "フォルダを指定してください。", String DefaultPath = "", Boolean IsNewFolder = false)
-        {
-            String PathName = "";
-
-            FolderBrowserDialog fd = new FolderBrowserDialog();
-
-            fd.Description = Title;
-            fd.RootFolder = Environment.SpecialFolder.Desktop;
-            fd.ShowNewFolderButton = IsNewFolder;
-            if (DefaultPath != String.Empty)
-            {
-                fd.SelectedPath = Path.GetDirectoryName(DefaultPath);
-            }
-
-            if (fd.ShowDialog() == DialogResult.OK)
-            {
-                PathName = fd.SelectedPath;
-            }
-            return PathName;
         }
 
         // 読み込みファイルを選択
@@ -2711,10 +2383,7 @@ namespace StandardTemplate
             //フォルダ内のファイル属性を変更
             foreach (FileInfo fi in dirInfo.GetFiles())
             {
-                if ((fi.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
-                {
-                    fi.Attributes = FileAttributes.Normal;
-                }
+                RemoveReadonlyAttribute(fi);
             }
 
             //サブフォルダの属性も変更
@@ -2792,11 +2461,7 @@ namespace StandardTemplate
         {
             Boolean DeleteComplete = true;
 
-            FileInfo fi = new FileInfo(DeleteFile);
-            if ((fi.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
-            {
-                fi.Attributes = FileAttributes.Normal;
-            }
+            RemoveReadonlyAttribute(new FileInfo(DeleteFile));
 
             try
             {
@@ -2832,24 +2497,6 @@ namespace StandardTemplate
                 // ファイルだけが対象
                 MoveFileOnly(SourcePath, TargetPath);
             }
-        }
-
-        // ディレクトリの中にディレクトリがあるか？
-        public Boolean IsExistSubDirectory(String Path)
-        {
-            if (!Directory.Exists(Path))
-            {
-                // そもそもパスが無効
-                return false;
-            }
-
-            // フォルダをリストアップ
-            String[] files = Directory.GetDirectories(Path, "*", SearchOption.TopDirectoryOnly);
-            if (files.Length > 0)
-            {
-                return true;
-            }
-            return false;
         }
 
         // ファイルだけを移動
@@ -2889,21 +2536,6 @@ namespace StandardTemplate
             return IsSuccess;
         }
 
-        // ファイルコピー[移動できないことを考慮]
-        public Boolean FileCopy(String SourcePath, String TargetPath)
-        {
-            Boolean IsSuccess = true;
-            try
-            {
-                File.Copy(SourcePath, TargetPath);
-            }
-            catch
-            {
-                IsSuccess = false;
-            }
-            return IsSuccess;
-        }
-
         // ファイルフルパスの中から先頭のパスを取得
         public String GetFirstPathName(String Path)
         {
@@ -2918,8 +2550,9 @@ namespace StandardTemplate
             return Folders[Folders.Length - 1];
         }
 
-        // ディレクトリが存在するか？
-        public Boolean IsExistDirectory(String Path, Boolean IsAutoCreate = false)
+        // ディレクトリが無ければ作る(IsAutoCreateがfalseのときは作ってよいか確認する)。
+        // 作成しなかった場合だけfalseを返す
+        public Boolean EnsureDirectory(String Path, Boolean IsAutoCreate = false)
         {
             Boolean IsExist = true;
             if (!Directory.Exists(Path))
@@ -2935,10 +2568,8 @@ namespace StandardTemplate
                         MessageBoxIcon.Exclamation,
                         MessageBoxDefaultButton.Button1);
 
-                    if (result == DialogResult.Yes)
-                    {
-                        IsCreate = true;
-                    }
+                    // 「いいえ」を選んでも作成してしまっていた(IsCreateがtrueのまま)
+                    IsCreate = (result == DialogResult.Yes);
                 }
 
                 if (IsCreate)
@@ -2966,15 +2597,21 @@ namespace StandardTemplate
         // ファイルデータを取得する
         public String LoadFile(String FilePath)
         {
-            String FileData = "";
-            if (File.Exists(FilePath))
+            return LoadFileWithEncoding(FilePath, Encoding.GetEncoding("Shift_JIS"));
+        }
+
+        // 指定した文字コードとして読み込む。ファイルが無ければ空文字を返す
+        private String LoadFileWithEncoding(String FilePath, Encoding SrcEncoding)
+        {
+            if (!File.Exists(FilePath))
             {
-                using (StreamReader sr = new StreamReader(FilePath, Encoding.GetEncoding("Shift_JIS")))
-                {
-                    FileData = sr.ReadToEnd();
-                }
+                return "";
             }
-            return FileData;
+
+            using (StreamReader sr = new StreamReader(FilePath, SrcEncoding))
+            {
+                return sr.ReadToEnd();
+            }
         }
 
         public Boolean DetectFileData(String FilePath, String DetectWord)
@@ -2992,203 +2629,14 @@ namespace StandardTemplate
 
         private Encoding GetEncord(ENCORD_TYPE EncordType)
         {
-            String EncordStr = "";
-            switch (EncordType)
+            // 未知の種別は空文字のままEncoding.GetEncoding("")に渡されて例外になっていたので、既定をShift_JISにする
+            String EncordStr = "shift_jis";
+            if (EncordType == ENCORD_TYPE.EUC_JP)
             {
-                case ENCORD_TYPE.SHIFT_JIS:
-                    EncordStr = "shift_jis";
-                    break;
-
-                case ENCORD_TYPE.EUC_JP:
-                    EncordStr = "euc-jp";
-                    break;
-
-                default:
-                    break;
+                EncordStr = "euc-jp";
             }
 
             return Encoding.GetEncoding(EncordStr);
-        }
-    }
-
-    // *******************************************************************************
-    // ImgFileIO
-    public partial class StcImage
-    {
-        public Size GetImageSize(String FilePath)
-        {
-            Size sz = new Size();
-
-            if (File.Exists(FilePath))
-            {
-                Bitmap canvas = new Bitmap(FilePath);
-
-                sz.Width = canvas.Width;
-                sz.Height = canvas.Height;
-
-                ReleaseImg(ref canvas);
-            }
-
-            return sz;
-        }
-
-        private void ReleaseImg(ref Bitmap img)
-        {
-            if (img != null)
-            {
-                img.Dispose();
-                img = null;
-            }
-        }
-    }
-
-    // *******************************************************************************
-    // ShellScript
-    class StcCreateScript
-    {
-        private StcUtils util = new StcUtils();
-
-        // スクリプト生成[ヘッダ]
-        public String CommonHeader()
-        {
-            String Script = @"#!/bin/sh" + System.Environment.NewLine +
-                             System.Environment.NewLine;
-            return Script;
-        }
-
-        public String LocalScriptShell(String Shell, String Param = "", Boolean IsBackGround = false)
-        {
-            String Script = Shell + " " + Param;
-
-            if (IsBackGround)
-            {
-                Script += " &";
-            }
-            Script += System.Environment.NewLine;
-
-            return Script;
-        }
-
-        public String LocalScriptSedDelete(String Target, String FileName)
-        {
-            String Script = "sed -i.bak '/" + util.ChangeLinuxPath2WindowsPath(Target) + "/d' " + FileName + System.Environment.NewLine;
-            return Script;
-        }
-
-        public String LocalScriptSedInsert(String Target, String Add, String FileName)
-        {
-            String Script = "sed -i.bak '/" + util.ChangeLinuxPath2WindowsPath(Target) + "/i " + util.ChangeLinuxPath2WindowsPath(Add) + "' " + FileName + System.Environment.NewLine;
-            return Script;
-        }
-
-        public String LocalScriptSedReplace(String Src, String Dest, String FileName)
-        {
-            String Script = "sed -i.bak 's|" + util.ChangeLinuxPath2WindowsPath(Src) + "|" + util.ChangeLinuxPath2WindowsPath(Dest) + "|g' " + FileName + System.Environment.NewLine;
-            return Script;
-        }
-
-        public String LocalScriptSedReplaceLine(String Src, String Dest, String FileName)
-        {
-            String Script = "sed -i.bak 's|" + util.ChangeLinuxPath2WindowsPath(Src) + ".*|" + util.ChangeLinuxPath2WindowsPath(Dest) + "|g' " + FileName + System.Environment.NewLine;
-            return Script;
-        }
-
-        public String LocalScriptSedReplaceTargetLine(String Target, String Src, String Dest, String FileName)
-        {
-            String Script = "sed -i.bak '/" + util.ChangeLinuxPath2WindowsPath(Target) + "/s|" + util.ChangeLinuxPath2WindowsPath(Src) + "|" + util.ChangeLinuxPath2WindowsPath(Dest) + "|g' " + FileName + System.Environment.NewLine;
-            return Script;
-        }
-
-        public String LocalScriptDiff(String SrcFile, String DestFile)
-        {
-            String Script = "diff " + SrcFile + " " + DestFile + System.Environment.NewLine;
-            return Script;
-        }
-
-        public String LocalScriptCp(String Src, String Dest)
-        {
-            String Ext = System.IO.Path.GetExtension(Src);
-            if (Ext == String.Empty)
-            {
-                // コピー元がフォルダの場合、フォルダの中身をコピーする
-                Src += "/*";
-            }
-            String Script = "cp -rp " + Src + " " + Dest + "/." + System.Environment.NewLine;
-            return Script;
-        }
-
-        // Grep
-        public String GetGrepWord(String GrepWord, String FileName, String OutputLine)
-        {
-            String OutFileName = Path.GetDirectoryName(FileName) + @"\";
-            OutFileName += Path.GetFileNameWithoutExtension(FileName);
-            OutFileName += "_" + GrepWord;
-            OutFileName += Path.GetExtension(FileName);
-
-            String Script = @"grep -A " + OutputLine + @" """ + GrepWord + @": ""  """ + FileName + @"""  > """ + OutFileName + @"""" + System.Environment.NewLine;
-            return Script;
-        }
-
-        // ファイルがカラでないときにコマンド実行
-        public String GetExecCmdWithExistFile(String FileName, String CommandName = "")
-        {
-            String Script = "";
-            String CmdName = "start";
-
-            if (CommandName != String.Empty)
-            {
-                CmdName = CommandName;
-            }
-
-            Script += "for %%i in (" + FileName + ") do set SIZE=%%~zi" + System.Environment.NewLine;
-            Script += "if %SIZE% neq 0 ( " + CmdName + " " + FileName + " )" + System.Environment.NewLine;
-
-            return Script;
-        }
-    }
-
-    // *******************************************************************************
-    // Sleepタイマー
-    class StcSleep
-    {
-        private TimeSpan SleepTimeMsec = TimeSpan.FromMilliseconds(0);      // Sleepする時間
-        private TimeSpan SleepCycleMsec = TimeSpan.FromMilliseconds(1000);  // Sleepを刻む時間
-        private Boolean IsStopRequest = false;  // 停止要求
-
-        public void SetSleepTimeMsec(uint msec)
-        {
-            SleepTimeMsec = TimeSpan.FromMilliseconds(msec);
-        }
-
-        public void SetSleepTimeSec(uint sec)
-        {
-            SleepTimeMsec = TimeSpan.FromSeconds(sec);
-        }
-
-        public void SetSleepCycleMsec(uint msec)
-        {
-            SleepCycleMsec = TimeSpan.FromMilliseconds(msec);
-        }
-
-        public Boolean StartSleep()
-        {
-            Boolean IsSuccess = true;
-            for (TimeSpan Timer = TimeSpan.FromMilliseconds(0); Timer < SleepTimeMsec; Timer += SleepCycleMsec)
-            {
-                Thread.Sleep(SleepCycleMsec);
-                if (IsStopRequest)
-                {
-                    // 途中キャンセル
-                    IsSuccess = false;
-                    break;
-                }
-            }
-            return IsSuccess;
-        }
-
-        public void StopSleep()
-        {
-            IsStopRequest = true;
         }
     }
 
@@ -3445,13 +2893,13 @@ namespace StandardTemplate
             switch (CaptureTarget)
             {
                 case CAPTURE_TARGET.FULL_SCREEN:
-                    IsSucess = SaveWithCaptureFullScreen(PictFileName);
+                    IsSucess = SaveWithPrintScreen("^{PRTSC}", PictFileName);
                     break;
                 case CAPTURE_TARGET.CURRENT_SCREEN:
                     IsSucess = SaveWithCaptureCurrentScreen(PictFileName);
                     break;
                 case CAPTURE_TARGET.CURRENT_WINDOW:
-                    IsSucess = SaveWithCaptureCurrentWindow(PictFileName);
+                    IsSucess = SaveWithPrintScreen("%{PRTSC}", PictFileName);
                     break;
                 default:
                     break;
@@ -3460,18 +2908,11 @@ namespace StandardTemplate
             return IsSucess;
         }
 
-        private Boolean SaveWithCaptureFullScreen(String PictFileName)
+        // PrintScreenでクリップボードへ取り込んでから保存する
+        // (Ctrl+PrintScreen="^{PRTSC}"で全画面、Alt+PrintScreen="%{PRTSC}"でアクティブウィンドウ)
+        private Boolean SaveWithPrintScreen(String PrintScreenKey, String PictFileName)
         {
-            // 全画面
-            SendKeys.SendWait("^{PRTSC}");
-
-            return SaveClipboard(PictFileName);
-        }
-
-        private Boolean SaveWithCaptureCurrentWindow(String PictFileName)
-        {
-            // Current Windowのみ
-            SendKeys.SendWait("%{PRTSC}");
+            SendKeys.SendWait(PrintScreenKey);
 
             return SaveClipboard(PictFileName);
         }
@@ -3494,7 +2935,11 @@ namespace StandardTemplate
             }
             finally
             {
-                img.Dispose();
+                // クリップボードから画像を取得できなかった場合はnullのままなので、そのままDisposeすると例外になる
+                if (img != null)
+                {
+                    img.Dispose();
+                }
             }
 
             return IsSucess;
@@ -3639,156 +3084,7 @@ namespace StandardTemplate
         public StcException(String msg, System.Exception inner) : base(msg, inner) { }
 
         protected StcException(System.Runtime.Serialization.SerializationInfo info,
-          System.Runtime.Serialization.StreamingContext context) { }
-    }
-
-    // *******************************************************************************
-    // Draw
-    public partial class StcDraw
-    {
-        public Bitmap canvas { get; private set; }
-
-        private Graphics g;
-        private PictureBox pb;
-
-        private Brush PenColor = Brushes.Black;
-        private int PenWidth = 1;
-
-        // T.B.D：未使用
-        private double coef = 1.0;  // PictureBox内に収まるようにスケーリング
-
-        StcDraw(PictureBox pict_box)
-        {
-            pb = pict_box;
-            canvas = new Bitmap(pb.Width, pb.Height);
-
-            //ImageオブジェクトのGraphicsオブジェクトを生成
-            g = Graphics.FromImage(canvas);
-        }
-
-        ~StcDraw()
-        {
-            g.Dispose();
-        }
-
-        public void SetPenColor(Brush color)
-        {
-            PenColor = color;
-        }
-
-        public void SetPenWidth(int width)
-        {
-            PenWidth = width;
-        }
-
-        // 背景塗り潰し
-        public void FillBackground(Brush color)
-        {
-            g.FillRectangle(color, 0, 0, pb.Width, pb.Height);
-        }
-
-        // PictureBox内に収まるようにスケーリングを調整
-        public void AdjustScale(Size ImgSize)
-        {
-            double ScaleWidth = 1.0;
-            if (ImgSize.Width != 0)
-            {
-                ScaleWidth = (double)pb.Width / (double)ImgSize.Width;
-            }
-
-            double ScaleHeight = 1.0;
-            if (ImgSize.Height != 0)
-            {
-                ScaleHeight = (double)pb.Height / (double)ImgSize.Height;
-            }
-
-            coef = Math.Min(ScaleWidth, ScaleHeight);
-        }
-
-        // 境界線を描画
-        public void DrawRectBorderLine(int x, int y, int width, int height)
-        {
-            Pen pen = new Pen(PenColor, PenWidth);
-
-            g.DrawRectangle(pen,
-                x,
-                y,
-                width,
-                height);
-
-            pen.Dispose();
-        }
-
-        // 矩形塗り潰し
-        public void DrawFillRect(Brush color, int x, int y, int width, int height)
-        {
-            g.FillRectangle(color,
-                x,
-                y,
-                width,
-                height);
-        }
-
-        public void DrawFillRectWidthBorderLine(Brush color, int x, int y, int width, int height)
-        {
-            // 塗り潰し
-            g.FillRectangle(color,
-                x,
-                y,
-                width,
-                height);
-
-            // 境界線
-            DrawRectBorderLine(
-                x,
-                y,
-                width,
-                height);
-        }
-    }
-
-    // *******************************************************************************
-    // Check
-    public class StcCheck
-    {
-        // Cygwinのフォルダパス
-        private readonly String DefaultCygwinPath = @"C:\Cygwin";
-
-        // CygwinのBinが使えるかチェックするファイル
-        private readonly String CheckCygwinBinName = "sh.exe";
-
-        // リモート処理に必要なファイルの一部
-        private readonly String[] NeedRemoteScriptFile = {
-            @"\bin\expect.exe",
-            @"\lib\tcl8.5\init.tcl"};
-
-        private StcUtils util = new StcUtils();
-
-        // CygwinのBinが使えるかチェック
-        public Boolean IsExistCygwinDir(String CygwinDir = "")
-        {
-            if (CygwinDir == String.Empty)
-            {
-                CygwinDir = DefaultCygwinPath;
-            }
-            return Directory.Exists(CygwinDir);
-        }
-
-        // CygwinのBinが使えるかチェック
-        public Boolean IsPossibleCygwinBin(String BinName = "")
-        {
-            if (BinName == String.Empty)
-            {
-                BinName = CheckCygwinBinName;
-            }
-            return util.IsExistFileNameInEnvironment(BinName);
-        }
-
-        // リモート処理が可能かチェック
-        public Boolean IsExistRemoteProcFile(String BaseDir = "")
-        {
-            return util.IsExistFiles(NeedRemoteScriptFile, BaseDir);
-        }
+          System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
     // *******************************************************************************
@@ -3802,6 +3098,8 @@ namespace StandardTemplate
 
         private int FileIndex = 1;
         private int FileIndexDigit = 2;
+
+        private StcFileInputOutput fio = new StcFileInputOutput();
 
         // コンストラクタ
         public StcDebug()
@@ -3859,7 +3157,6 @@ namespace StandardTemplate
         {
             if (IsDebugMode == true)
             {
-                StcFileInputOutput fio = new StcFileInputOutput();
                 String WriteData = "";
                 if (IsWriteTime)
                 {
@@ -3885,7 +3182,6 @@ namespace StandardTemplate
             }
             FileName += FilenameSuffixStr + "." + Extension;
 
-            StcFileInputOutput fio = new StcFileInputOutput();
             fio.SaveFile(FileName, Data);
 
             FileIndex++;
