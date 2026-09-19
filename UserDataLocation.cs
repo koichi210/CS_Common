@@ -38,7 +38,15 @@ namespace StandardTemplate
                     appName);
 
                 Directory.CreateDirectory(dataFolder);
-                WritePointerFile(pointerPath, dataFolder, appName);
+
+                // exeが書き込み禁止の場所(Program Files等)にあっても起動できるよう、案内板の作成失敗は無視する
+                try
+                {
+                    WritePointerFile(pointerPath, dataFolder, appName);
+                }
+                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+                {
+                }
             }
 
             Directory.CreateDirectory(dataFolder);
@@ -76,14 +84,22 @@ namespace StandardTemplate
                 return null;
             }
 
-            String[] lines = File.ReadAllLines(pointerPath);
+            String[] lines;
+            try
+            {
+                lines = File.ReadAllLines(pointerPath);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                return null;
+            }
             if (lines.Length == 0)
             {
                 return null;
             }
 
             String candidate = lines[0].Trim();
-            if (String.IsNullOrEmpty(candidate) || !Directory.Exists(candidate))
+            if (String.IsNullOrEmpty(candidate) || candidate.IndexOfAny(Path.GetInvalidPathChars()) >= 0 || !Directory.Exists(candidate))
             {
                 return null;
             }

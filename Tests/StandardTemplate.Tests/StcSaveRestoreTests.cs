@@ -261,6 +261,45 @@ namespace StandardTemplate.Tests
         }
 
         [TestMethod]
+        public void 壊れた設定ファイルを読んでも落ちずに初期値へ戻る()
+        {
+            TextBox textBox = Track(new TextBox());
+            var profile = new TestProfile();
+            profile.RegistCtrl("Name", "Text", textBox, "初期値");
+
+            string path = PathFor("broken");
+            File.WriteAllText(path, "<root><Param Name=\"Text\">途中で切れた");
+
+            textBox.Text = "画面で変更した値";
+            Assert.IsFalse(profile.LoadXmlFile(path), "壊れたファイルは false");
+            Assert.AreEqual("初期値", textBox.Text, "読めなかった項目は初期値に戻る");
+
+            Assert.AreEqual("既定", profile.LoadXmlFile(path, "Name", "Text", "既定"), "個別読み込みは既定値");
+            Assert.AreEqual(0, profile.LoadXmlFileList(path, "Name", "Text").Length, "リスト読み込みは空");
+            Assert.AreEqual(0, profile.LoadXmlVersion(path), "バージョンは0");
+        }
+
+        [TestMethod]
+        public void 上書き保存しても一時ファイルが残らない()
+        {
+            TextBox textBox = Track(new TextBox());
+            var profile = new TestProfile();
+            profile.RegistCtrl("Name", "Text", textBox);
+
+            string path = PathFor("overwrite");
+            textBox.Text = "1回目";
+            Assert.IsTrue(profile.SaveXmlFile(path));
+            textBox.Text = "2回目";
+            Assert.IsTrue(profile.SaveXmlFile(path));
+
+            Assert.IsFalse(File.Exists(path + ".tmp"), "一時ファイルは置き換え後に残らない");
+
+            textBox.Text = "";
+            profile.LoadXmlFile(path);
+            Assert.AreEqual("2回目", textBox.Text, "上書き後の内容が読める");
+        }
+
+        [TestMethod]
         public void 要素名を変えても保存して読み直せる()
         {
             TextBox textBox = Track(new TextBox());

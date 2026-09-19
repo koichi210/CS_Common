@@ -958,8 +958,16 @@ namespace StandardTemplate
                 }
             }
 
-            // ファイルをリストアップ
-            String[] files = Directory.GetFiles(DirectoryPath, FileExtension, SearchOption.AllDirectories);
+            // ファイルをリストアップ(アクセス権の無いサブフォルダが1つでもあると例外になるため、その場合は一覧を更新しない)
+            String[] files;
+            try
+            {
+                files = Directory.GetFiles(DirectoryPath, FileExtension, SearchOption.AllDirectories);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                return;
+            }
 
             SetComboBoxFromArray(ComboCtrl, files, DirectoryPath);
             SetComboBoxText(ComboCtrl, DefaultProfileName);
@@ -1247,6 +1255,39 @@ namespace StandardTemplate
 
     // *******************************************************************************
     // プロファイルの保存＆読み込み
+    // 書き込み途中で落ちても元のファイルが壊れないよう、一時ファイルに書き切ってから置き換える
+    internal static class AtomicFile
+    {
+        public static void Write(String FilePath, Action<String> WriteTo)
+        {
+            String TempPath = FilePath + ".tmp";
+            try
+            {
+                WriteTo(TempPath);
+                if (File.Exists(FilePath))
+                {
+                    File.Replace(TempPath, FilePath, null);
+                }
+                else
+                {
+                    File.Move(TempPath, FilePath);
+                }
+            }
+            finally
+            {
+                if (File.Exists(TempPath))
+                {
+                    File.Delete(TempPath);
+                }
+            }
+        }
+
+        public static void WriteAllText(String FilePath, String Text, Encoding Enc)
+        {
+            Write(FilePath, TempPath => File.WriteAllText(TempPath, Text, Enc));
+        }
+    }
+
     class StcSaveRestore
     {
         class OriginDB
@@ -1574,47 +1615,54 @@ namespace StandardTemplate
                 return false;
             }
 
-            // 同じファイルをLoadSecureCodeと設定値読み込みでそれぞれ個別にXmlDocument.Load
-            // していたため、ファイルI/OとXMLパースが2回走っていた。1回読み込んだ
-            // XmlDocumentを両方で使い回すことで1回にまとめる。
-            XmlDocument document = new XmlDocument();
-            document.Load(FileName);
-
-            // 管理情報は先に読む
-            Boolean UseSecure = UseSecureCtrl();
-            if (UseSecure)
+            // 設定ファイルが壊れていても起動できるよう、途中で失敗したら全項目を初期値に戻して false を返す
+            try
             {
-                LoadSecureCode(document);
-            }
+                // 同じファイルをLoadSecureCodeと設定値読み込みでそれぞれ個別にXmlDocument.Load
+                // していたため、ファイルI/OとXMLパースが2回走っていた。1回読み込んだ
+                // XmlDocumentを両方で使い回すことで1回にまとめる。
+                XmlDocument document = new XmlDocument();
+                document.Load(FileName);
 
-            // 設定値を読む
-            foreach (XmlElement element in document.DocumentElement)
-            {
-                String ElementValue = element.InnerText;
-                if (LoadTextCtrl(element, ElementValue)) { continue; }
-                if (LoadCheckCtrl(element, ElementValue)) { continue; }
-                if (LoadRadioCtrl(element, ElementValue)) { continue; }
-                if (LoadComboCtrl(element, ElementValue)) { continue; }
-                if (LoadComboCtrlList(element, ElementValue)) { continue; }
-                if (LoadCheckedListBoxCtrl(element, ElementValue)) { continue; }
-                if (LoadDataGridCtrl(element, ElementValue)) { continue; }
-                if (LoadHScrollBarCtrl(element, ElementValue)) { continue; }
-                if (UseSecure && LoadSecureCtrl(element, ElementValue)) { continue; }
+                // 管理情報は先に読む
+                Boolean UseSecure = UseSecureCtrl();
+                if (UseSecure)
+                {
+                    LoadSecureCode(document);
+                }
+
+                // 設定値を読む
+                foreach (XmlElement element in document.DocumentElement)
+                {
+                    String ElementValue = element.InnerText;
+                    if (LoadTextCtrl(element, ElementValue)) { continue; }
+                    if (LoadCheckCtrl(element, ElementValue)) { continue; }
+                    if (LoadRadioCtrl(element, ElementValue)) { continue; }
+                    if (LoadComboCtrl(element, ElementValue)) { continue; }
+                    if (LoadComboCtrlList(element, ElementValue)) { continue; }
+                    if (LoadCheckedListBoxCtrl(element, ElementValue)) { continue; }
+                    if (LoadDataGridCtrl(element, ElementValue)) { continue; }
+                    if (LoadHScrollBarCtrl(element, ElementValue)) { continue; }
+                    if (UseSecure && LoadSecureCtrl(element, ElementValue)) { continue; }
+                }
+                return true;
             }
-            return true;
+            catch (Exception)
+            {
+                SetDefaultParam();
+                return false;
+            }
         }
 
         // コントロール読み込み[個別]
         public String LoadXmlFile(String FileName, String AttrName, String AttrValue, String DefaultElement = "")
         {
             String ElementValue = DefaultElement;
-            if (!File.Exists(FileName))
+            XmlDocument document = TryLoadXmlDocument(FileName);
+            if (document == null)
             {
                 return ElementValue;
             }
-
-            XmlDocument document = new XmlDocument();
-            document.Load(FileName);
 
             foreach (XmlElement element in document.DocumentElement)
             {
@@ -1636,13 +1684,11 @@ namespace StandardTemplate
         public String[] LoadXmlFileList(String FileName, String AttrName, String AttrValue)
         {
             String[] StringArray = new String[] { };
-            if (!File.Exists(FileName))
+            XmlDocument document = TryLoadXmlDocument(FileName);
+            if (document == null)
             {
                 return StringArray;
             }
-
-            XmlDocument document = new XmlDocument();
-            document.Load(FileName);
 
             foreach (XmlElement element in document.DocumentElement)
             {
@@ -1862,9 +1908,32 @@ namespace StandardTemplate
         /// 設定ファイルの読み込み[バージョン]
         public int LoadXmlVersion(String FileName)
         {
-            XmlDocument document = new XmlDocument();
-            document.Load(FileName);
+            XmlDocument document = TryLoadXmlDocument(FileName);
+            if (document == null)
+            {
+                return 0;
+            }
             return LoadXmlVersion(document);
+        }
+
+        // ファイルが無い・読めない・XMLとして壊れている場合は null を返す
+        private static XmlDocument TryLoadXmlDocument(String FileName)
+        {
+            if (!File.Exists(FileName))
+            {
+                return null;
+            }
+
+            try
+            {
+                XmlDocument document = new XmlDocument();
+                document.Load(FileName);
+                return document.DocumentElement == null ? null : document;
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is XmlException)
+            {
+                return null;
+            }
         }
 
         // 設定ファイルの読み込み[バージョン]
@@ -1878,7 +1947,7 @@ namespace StandardTemplate
 
                 if (attribute.Equals(VersionKeyName))
                 {
-                    VersionNo = int.Parse(text);
+                    int.TryParse(text, out VersionNo);
                     break;
                 }
             }
@@ -1899,7 +1968,7 @@ namespace StandardTemplate
         {
             try
             {
-                m_WriteDocument.Save(file_name);
+                AtomicFile.Write(file_name, m_WriteDocument.Save);
             }
             catch (Exception)
             {
@@ -2416,11 +2485,6 @@ namespace StandardTemplate
         // ファイル作成
         public void CreateFile(String FileName, String Data, ENCORD_TYPE EncordType, Boolean DebugMode = false)
         {
-            StreamWriter sw = new StreamWriter(
-                FileName,
-                false,
-                GetEncord(EncordType));
-
             // デバッグモードのときは、バッチの画面を閉じない
             if (DebugMode)
             {
@@ -2429,8 +2493,10 @@ namespace StandardTemplate
 
             // 改行コードを変換
             Data = utils.ChangeNewLineCode(EncordType, Data);
-            sw.Write(Data);
-            sw.Close();
+            using (StreamWriter sw = new StreamWriter(FileName, false, GetEncord(EncordType)))
+            {
+                sw.Write(Data);
+            }
         }
 
         // 文字コード変換[UTF8→Sjis]
@@ -2445,9 +2511,10 @@ namespace StandardTemplate
             String FileData = "";
             if (File.Exists(InFileName))
             {
-                StreamReader sr = new StreamReader(InFileName, src);
-                FileData = sr.ReadToEnd();
-                sr.Close();
+                using (StreamReader sr = new StreamReader(InFileName, src))
+                {
+                    FileData = sr.ReadToEnd();
+                }
             }
 
             SaveFile(OutFileName, FileData);
@@ -2488,8 +2555,9 @@ namespace StandardTemplate
 
             try
             {
-                FileStream fs = File.Open(FilePath, FileMode.Open, FileAccess.Read);
-                fs.Close();
+                using (File.Open(FilePath, FileMode.Open, FileAccess.Read))
+                {
+                }
             }
             catch (Exception)
             {
@@ -2889,9 +2957,10 @@ namespace StandardTemplate
         // データをセーブする
         public void SaveFile(String FilePath, String Data, Boolean IsAppend = false)
         {
-            StreamWriter sw = new StreamWriter(FilePath, IsAppend, System.Text.Encoding.GetEncoding("Shift_JIS"));
-            sw.Write(Data);
-            sw.Close();
+            using (StreamWriter sw = new StreamWriter(FilePath, IsAppend, System.Text.Encoding.GetEncoding("Shift_JIS")))
+            {
+                sw.Write(Data);
+            }
         }
 
         // ファイルデータを取得する
@@ -2900,9 +2969,10 @@ namespace StandardTemplate
             String FileData = "";
             if (File.Exists(FilePath))
             {
-                StreamReader sr = new StreamReader(FilePath, Encoding.GetEncoding("Shift_JIS"));
-                FileData = sr.ReadToEnd();
-                sr.Close();
+                using (StreamReader sr = new StreamReader(FilePath, Encoding.GetEncoding("Shift_JIS")))
+                {
+                    FileData = sr.ReadToEnd();
+                }
             }
             return FileData;
         }

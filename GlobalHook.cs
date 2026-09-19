@@ -11,6 +11,20 @@ using System;
 
 namespace GlobalHook
 {
+    // フックプロシージャ内の例外はApplication.ThreadExceptionを通らずプロセスごと落ちるため、
+    // その場では止めて、UIスレッドのメッセージループへ投げ直して通常の例外処理に乗せる
+    internal static class HookExceptionRelay
+    {
+        public static void Report(Exception ex)
+        {
+            System.Threading.SynchronizationContext context = System.Threading.SynchronizationContext.Current;
+            if (context != null)
+            {
+                context.Post(_ => { throw new InvalidOperationException("グローバルフックの処理中にエラーが発生したよ", ex); }, null);
+            }
+        }
+    }
+
     /// <summary>
     /// キーボードのグローバルフックに関するクラス
     /// </summary>
@@ -292,7 +306,14 @@ namespace GlobalHook
                 State.Time = s.time;
                 State.ExtraInfo = s.dwExtraInfo;
 
-                HookEvent(ref State);
+                try
+                {
+                    HookEvent(ref State);
+                }
+                catch (Exception ex)
+                {
+                    HookExceptionRelay.Report(ex);
+                }
 
                 if (IsCancel)
                 {
@@ -591,7 +612,14 @@ namespace GlobalHook
                 State.Time = s.time;
                 State.ExtraInfo = s.dwExtraInfo;
 
-                HookEvent(ref State);
+                try
+                {
+                    HookEvent(ref State);
+                }
+                catch (Exception ex)
+                {
+                    HookExceptionRelay.Report(ex);
+                }
 
                 if (IsCancel)
                 {

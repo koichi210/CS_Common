@@ -28,19 +28,26 @@ namespace StandardTemplate
         public static void Save<T>(String filePath, T data)
         {
             String json = JsonConvert.SerializeObject(data, Formatting.Indented);
-            File.WriteAllText(filePath, json, new UTF8Encoding(false));
+            AtomicFile.WriteAllText(filePath, json, new UTF8Encoding(false));
         }
 
-        // filePathのJSONを読み込んでT型に変換する。ファイルが無ければdefault(T)を返す
+        // filePathのJSONを読み込んでT型に変換する。ファイルが無い・読めない・中身が壊れている場合はdefault(T)を返す
         public static T Load<T>(String filePath)
         {
-            if (!File.Exists(filePath))
+            try
+            {
+                if (!File.Exists(filePath))
+                {
+                    return default(T);
+                }
+
+                String json = File.ReadAllText(filePath, Encoding.UTF8);
+                return JsonConvert.DeserializeObject<T>(json);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is JsonException)
             {
                 return default(T);
             }
-
-            String json = File.ReadAllText(filePath, Encoding.UTF8);
-            return JsonConvert.DeserializeObject<T>(json);
         }
     }
 }

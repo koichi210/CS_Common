@@ -2,6 +2,10 @@
 # このファイルは自動生成。手で編集しないこと。
 # 差分が出た = 呼び出し側に影響する変更をした、という意味。
 
+TYPE internal static class StandardTemplate.AtomicFile
+    METHOD public static Void Write(String FilePath, Action<String> WriteTo)
+    METHOD public static Void WriteAllText(String FilePath, String Text, Encoding Enc)
+
 TYPE public class StandardTemplate.CaptWindow
     CTOR   public CaptWindow()
     FIELD  public Boolean IsCaptureCase
@@ -277,4 +281,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 19 types / 237 members
+# total: 20 types / 239 members
