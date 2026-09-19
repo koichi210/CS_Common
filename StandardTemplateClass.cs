@@ -1419,104 +1419,67 @@ namespace StandardTemplate
         }
 
         // コントロール登録
+        private static void AddRegistered<TDB>(ref TDB[] RegisteredCtrl, TDB Item, String AttrName, String AttrValue, String ElementValue) where TDB : OriginDB
+        {
+            Item.SetDefaultParam(AttrName, AttrValue, ElementValue);
+            Array.Resize(ref RegisteredCtrl, RegisteredCtrl.Length + 1);
+            RegisteredCtrl[RegisteredCtrl.Length - 1] = Item;
+        }
+
         public void RegistCtrl(String AttrName, String AttrValue, TextBox Ctrl, String ElementValue = "")
         {
-            Array.Resize(ref RegTextCtrl, RegTextCtrl.Length + 1);
-            int AddIdx = RegTextCtrl.Length - 1;
-
-            RegTextCtrl[AddIdx] = new TextCtrlDB();
-            RegTextCtrl[AddIdx].SetDefaultParam(AttrName, AttrValue, ElementValue);
-            RegTextCtrl[AddIdx].Ctrl = Ctrl;
+            AddRegistered(ref RegTextCtrl, new TextCtrlDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue);
         }
 
         public void RegistCtrl(String AttrName, String AttrValue, RadioButton Ctrl, String ElementValue = "")
         {
-            Array.Resize(ref RegRadioCtrl, RegRadioCtrl.Length + 1);
-            int AddIdx = RegRadioCtrl.Length - 1;
-
-            RegRadioCtrl[AddIdx] = new RadioButtonCtrlDB();
-            RegRadioCtrl[AddIdx].SetDefaultParam(AttrName, AttrValue, ElementValue);
-            RegRadioCtrl[AddIdx].Ctrl = Ctrl;
+            AddRegistered(ref RegRadioCtrl, new RadioButtonCtrlDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue);
         }
 
         public void RegistCtrl(String AttrName, String AttrValue, CheckBox Ctrl, String ElementValue = "")
         {
-            Array.Resize(ref RegCheckCtrl, RegCheckCtrl.Length + 1);
-            int AddIdx = RegCheckCtrl.Length - 1;
-
-            RegCheckCtrl[AddIdx] = new CheckBoxDB();
-            RegCheckCtrl[AddIdx].SetDefaultParam(AttrName, AttrValue, ElementValue);
-            RegCheckCtrl[AddIdx].Ctrl = Ctrl;
+            AddRegistered(ref RegCheckCtrl, new CheckBoxDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue);
         }
 
         public void RegistCtrl(String AttrName, String AttrValue, ComboBox Ctrl, String ElementValue = "")
         {
-            Array.Resize(ref RegComboCtrl, RegComboCtrl.Length + 1);
-            int AddIdx = RegComboCtrl.Length - 1;
-
-            RegComboCtrl[AddIdx] = new ComboBoxDB();
-            RegComboCtrl[AddIdx].SetDefaultParam(AttrName, AttrValue, ElementValue);
-            RegComboCtrl[AddIdx].Ctrl = Ctrl;
+            AddRegistered(ref RegComboCtrl, new ComboBoxDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue);
         }
 
         public void RegistCtrl(String AttrName, String AttrValue, String AttrCountValue, DataGridView Ctrl, String ElementValue = "")
         {
-            Array.Resize(ref RegDataGridCtrl, RegDataGridCtrl.Length + 1);
-            int AddIdx = RegDataGridCtrl.Length - 1;
-
-            RegDataGridCtrl[AddIdx] = new DataGridViewDB();
-            RegDataGridCtrl[AddIdx].SetDefaultParam(AttrName, AttrValue, ElementValue);
-            RegDataGridCtrl[AddIdx].Ctrl = Ctrl;
-            RegDataGridCtrl[AddIdx].Ctrl.RowCount = 1;
-            RegDataGridCtrl[AddIdx].AttrCountValue = AttrCountValue;
+            Ctrl.RowCount = 1;
+            AddRegistered(ref RegDataGridCtrl, new DataGridViewDB { Ctrl = Ctrl, AttrCountValue = AttrCountValue }, AttrName, AttrValue, ElementValue);
         }
 
         public void RegistCtrl(String AttrName, String AttrValue, HScrollBar Ctrl, int ElementValue = 0)
         {
-            Array.Resize(ref RegHScrollBarCtrl, RegHScrollBarCtrl.Length + 1);
-            int AddIdx = RegHScrollBarCtrl.Length - 1;
-
-            RegHScrollBarCtrl[AddIdx] = new HScrollBarDB();
-            RegHScrollBarCtrl[AddIdx].SetDefaultParam(AttrName, AttrValue, ElementValue.ToString());
-            RegHScrollBarCtrl[AddIdx].Ctrl = Ctrl;
+            AddRegistered(ref RegHScrollBarCtrl, new HScrollBarDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue.ToString());
         }
 
         public void RegistCtrlList(String AttrName, String AttrValue, ComboBox Ctrl, String ElementValue = "")
         {
-            Array.Resize(ref RegComboCtrlList, RegComboCtrlList.Length + 1);
-            int AddIdx = RegComboCtrlList.Length - 1;
-
-            RegComboCtrlList[AddIdx] = new ComboBoxDB();
-            RegComboCtrlList[AddIdx].SetDefaultParam(AttrName, AttrValue, ElementValue);
-            RegComboCtrlList[AddIdx].Ctrl = Ctrl;
+            AddRegistered(ref RegComboCtrlList, new ComboBoxDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue);
         }
 
         public void RegistCtrlList(String AttrName, String AttrValue, CheckedListBox Ctrl, String ElementValue = "")
         {
-            Array.Resize(ref RegCheckedListBox, RegCheckedListBox.Length + 1);
-            int AddIdx = RegCheckedListBox.Length - 1;
-
-            RegCheckedListBox[AddIdx] = new CheckedListBoxDB();
-            RegCheckedListBox[AddIdx].SetDefaultParam(AttrName, AttrValue, ElementValue);
-            RegCheckedListBox[AddIdx].Ctrl = Ctrl;
+            AddRegistered(ref RegCheckedListBox, new CheckedListBoxDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue);
         }
 
         public void RegistSecureCtrl(String AttrName, String AttrValue, TextBox Ctrl, String ElementValue = "")
         {
-            Array.Resize(ref RegSecureCtrl, RegSecureCtrl.Length + 1);
-            int AddIdx = RegSecureCtrl.Length - 1;
-
-            RegSecureCtrl[AddIdx] = new SecureCtrlDB();
-            RegSecureCtrl[AddIdx].SetDefaultParam(AttrName, AttrValue, ElementValue);
-            RegSecureCtrl[AddIdx].Ctrl = Ctrl;
-
-            RegSecureCtrl[AddIdx].DesKey = new List<byte>();
-            RegSecureCtrl[AddIdx].DesIV = new List<byte>();
-            RegSecureCtrl[AddIdx].cryptData = new List<byte>();
-            RegSecureCtrl[AddIdx].SecureAttrName = DefaultSecureAttrName;
-            RegSecureCtrl[AddIdx].SecureAttrValueDesKey = DefaultSecureAttrValueDesKey;
-            RegSecureCtrl[AddIdx].SecureAttrValueDesIV = DefaultSecureAttrValueDesIV;
-            RegSecureCtrl[AddIdx].SecureAttrValueCryptData = DefaultSecureAttrValueCryptData;
+            AddRegistered(ref RegSecureCtrl, new SecureCtrlDB
+            {
+                Ctrl = Ctrl,
+                DesKey = new List<byte>(),
+                DesIV = new List<byte>(),
+                cryptData = new List<byte>(),
+                SecureAttrName = DefaultSecureAttrName,
+                SecureAttrValueDesKey = DefaultSecureAttrValueDesKey,
+                SecureAttrValueDesIV = DefaultSecureAttrValueDesIV,
+                SecureAttrValueCryptData = DefaultSecureAttrValueCryptData,
+            }, AttrName, AttrValue, ElementValue);
         }
 
         // コントロール初期値設定
