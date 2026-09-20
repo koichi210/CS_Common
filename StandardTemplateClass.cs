@@ -942,7 +942,7 @@ namespace StandardTemplate
         // コンボボックスの中から目的の文字列を探す
         public String FindStringFromComboBox(ComboBox CmbCtrl, String SrcName, String TrimName = "", Boolean IsReverse = false)
         {
-            String SerchName = SrcName;
+            String SearchName = SrcName;
             String DestName = "";
 
             // SrcTrimNameが設定されていたら、特定の文字列で区切る
@@ -960,16 +960,16 @@ namespace StandardTemplate
 
                 if (0 <= FileNameidx)
                 {
-                    SerchName = SrcName.Substring(0, FileNameidx);
+                    SearchName = SrcName.Substring(0, FileNameidx);
                 }
             }
 
-            if (SerchName.Length != 0)
+            if (SearchName.Length != 0)
             {
                 for (int i = 0; i < CmbCtrl.Items.Count; i++)
                 {
                     String ComboString = CmbCtrl.Items[i].ToString();
-                    if (ComboString.IndexOf(SerchName) != -1)
+                    if (ComboString.IndexOf(SearchName) != -1)
                     {
                         DestName = ComboString;
                         break;
