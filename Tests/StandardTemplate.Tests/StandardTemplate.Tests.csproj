@@ -52,6 +52,9 @@
   </ItemGroup>
   <ItemGroup>
     <!-- テスト対象の本体。各アプリの csproj と同じ <Link> 方式で取り込む -->
+    <Compile Include="..\..\AtomicFile.cs">
+      <Link>AtomicFile.cs</Link>
+    </Compile>
     <Compile Include="..\..\StandardTemplateClass.cs">
       <Link>StandardTemplateClass.cs</Link>
     </Compile>
