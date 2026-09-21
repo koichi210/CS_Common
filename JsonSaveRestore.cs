@@ -11,11 +11,41 @@
 //   XMLの読み込み方(LoadProcの引数)はプロジェクトごとに違うため、呼び出し側から渡す。
 using System;
 using System.IO;
+using System.Windows.Forms;
 
 namespace StandardTemplate
 {
     static class JsonSaveRestore
     {
+        // 「保存先を選ぶ→保存する→プロファイル一覧を更新する→結果を知らせる」という
+        // プロファイル保存ボタンの中身が7プロジェクトで同じだったため集約した。
+        // Save は拡張子で振り分ける各プロジェクトの SaveProfile を渡す(旧XMLも保存できる)。
+        // 戻り値は保存したファイル名。キャンセル時と失敗時は空文字を返す
+        public static String SaveProfileWithDialog(StcUtils Utils, StcFileInputOutput FileIO,
+                                                   ComboBox ProfileCtrl, String[] ProfileExtensions,
+                                                   Func<String, Boolean> Save,
+                                                   String InitialDirectory = "",
+                                                   String SuccessMessage = "設定値を保存しました♪")
+        {
+            String SaveFileName = FileIO.SelectSaveFileName(ProfileCtrl.Text, InitialDirectory);
+            if (String.IsNullOrEmpty(SaveFileName))
+            {
+                // ダイアログでキャンセルされた
+                return "";
+            }
+
+            if (!Save(SaveFileName))
+            {
+                MessageBox.Show("設定の保存に失敗しました" + Environment.NewLine + SaveFileName,
+                    "エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return "";
+            }
+
+            Utils.UpdateProfileList(ref ProfileCtrl, ProfileExtensions, Path.GetFileName(SaveFileName));
+            MessageBox.Show(SuccessMessage + Environment.NewLine + SaveFileName);
+            return SaveFileName;
+        }
+
         public static Boolean Save(StcSaveRestore SaveRestore, String FilePath)
         {
             try
