@@ -692,41 +692,45 @@ namespace StandardTemplate
             return DestDirName;
         }
 
-        public String GetSelectName(ListBox ListBoxCtrl, String RootPath = "")
+        // 選択項目を「RootPath\項目名」の形で改行区切りに連結する。項目名の取り出し方だけが
+        // ListBox/ListViewで違うため、そこだけ呼び出し元から渡してもらう形に集約した
+        private static String JoinSelectedNames(int Count, String RootPath, Func<int, String> GetItemText)
         {
             StringBuilder TargetName = new StringBuilder();
-            for (int i = 0; i < ListBoxCtrl.SelectedItems.Count; i++)
+            for (int i = 0; i < Count; i++)
             {
                 if (RootPath != String.Empty)
                 {
                     TargetName.Append(RootPath).Append(@"\");
                 }
-                TargetName.Append(ListBoxCtrl.SelectedItems[i].ToString()).Append(Environment.NewLine);
+                TargetName.Append(GetItemText(i)).Append(Environment.NewLine);
             }
 
             return TargetName.ToString();
         }
 
+        public String GetSelectName(ListBox ListBoxCtrl, String RootPath = "")
+        {
+            return JoinSelectedNames(ListBoxCtrl.SelectedItems.Count, RootPath,
+                i => ListBoxCtrl.SelectedItems[i].ToString());
+        }
+
         public String GetSelectListName(ListView ListViewCtrl, String RootPath = "", int index = 0)
         {
-            StringBuilder TargetName = new StringBuilder();
-            for (int i = 0; i < ListViewCtrl.SelectedItems.Count; i++)
-            {
-                if (RootPath != String.Empty)
-                {
-                    TargetName.Append(RootPath).Append(@"\");
-                }
-                TargetName.Append(ListViewCtrl.SelectedItems[i].SubItems[index].Text).Append(Environment.NewLine);
-            }
+            return JoinSelectedNames(ListViewCtrl.SelectedItems.Count, RootPath,
+                i => ListViewCtrl.SelectedItems[i].SubItems[index].Text);
+        }
 
-            return TargetName.ToString();
+        // Ctrl+Cかどうかの判定。ListBox/ListView両方のCopyToClipboardで同じだったため集約した
+        private static Boolean IsCopyShortcut(KeyEventArgs e)
+        {
+            return e.KeyCode == Keys.C && e.Control == true;
         }
 
         // リストボックスの選択項目をコピー
         public void CopyToClipboard(KeyEventArgs e, ListBox ListBoxCtrl, String RootPath = "")
         {
-            // ガード節にして、以降のネストを浅くした(挙動は変えていない)
-            if (e.KeyCode != Keys.C || e.Control != true)
+            if (!IsCopyShortcut(e))
             {
                 return;
             }
@@ -783,8 +787,7 @@ namespace StandardTemplate
         // リストコントロールの選択項目をコピー
         public void CopyToClipboard(KeyEventArgs e, ListView ListViewCtrl, String RootPath = "", int index = 0)
         {
-            // ガード節にして、以降のネストを浅くした(挙動は変えていない)
-            if (e.KeyCode != Keys.C || e.Control != true)
+            if (!IsCopyShortcut(e))
             {
                 return;
             }
@@ -910,35 +913,31 @@ namespace StandardTemplate
             }
         }
 
+        // ComboBoxの項目を前から順に見て、条件に最初に一致した項目の文字列を返す(無ければnull)。
+        // 「一致するか判定→見つかったらそこで終了」という同じ形のループが3箇所にあったため集約した
+        private static String FindComboBoxItem(ComboBox ComboCtrl, Func<String, Boolean> IsMatch)
+        {
+            for (int i = 0; i < ComboCtrl.Items.Count; i++)
+            {
+                String ItemText = ComboCtrl.Items[i].ToString();
+                if (IsMatch(ItemText))
+                {
+                    return ItemText;
+                }
+            }
+            return null;
+        }
+
         // ComboBoxに登録済みかチェック
         private Boolean IsRegisteredCombBox(ComboBox ComboCtrl, String RegisterText)
         {
-            Boolean IsRegistered = false;
-            for (int i = 0; i < ComboCtrl.Items.Count; i++)
-            {
-                if (RegisterText == ComboCtrl.Items[i].ToString())
-                {
-                    // すでに登録済みの文字だった
-                    IsRegistered = true;
-                    break;
-                }
-            }
-            return IsRegistered;
+            return FindComboBoxItem(ComboCtrl, Item => Item == RegisterText) != null;
         }
 
         // 文字列をコンボボックスに設定
         public void SetComboBoxText(ComboBox ComboCtrl, String DefaultProfileName)
         {
-            String ProfileName = "";
-
-            for (int i = 0; i < ComboCtrl.Items.Count; i++)
-            {
-                if (ComboCtrl.Items[i].ToString() == DefaultProfileName)
-                {
-                    ProfileName = DefaultProfileName;
-                    break;
-                }
-            }
+            String ProfileName = FindComboBoxItem(ComboCtrl, Item => Item == DefaultProfileName) ?? "";
 
             if (ProfileName == String.Empty && 0 < ComboCtrl.Items.Count)
             {
@@ -975,15 +974,7 @@ namespace StandardTemplate
 
             if (SearchName.Length != 0)
             {
-                for (int i = 0; i < CmbCtrl.Items.Count; i++)
-                {
-                    String ComboString = CmbCtrl.Items[i].ToString();
-                    if (ComboString.IndexOf(SearchName) != -1)
-                    {
-                        DestName = ComboString;
-                        break;
-                    }
-                }
+                DestName = FindComboBoxItem(CmbCtrl, Item => Item.IndexOf(SearchName) != -1) ?? "";
             }
             return DestName;
         }
