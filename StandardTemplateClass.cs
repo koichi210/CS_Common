@@ -1059,16 +1059,32 @@ namespace StandardTemplate
             public String AttrValue { get; set; }
             public String ElementValue { get; set; }
 
-            public void SetDefaultParam(String attr_name, String attr_value, String element_value)
+            // typo修正等でAttrValue(実質的な設定キー)を変えたときに、旧キーで保存された
+            // 設定ファイルも読めるようにするための読み替え用。無ければnull
+            public String LegacyAttrValue { get; set; }
+
+            public void SetDefaultParam(String attr_name, String attr_value, String element_value, String legacy_attr_value = null)
             {
                 AttrName = attr_name;
                 AttrValue = attr_value;
                 ElementValue = element_value;
+                LegacyAttrValue = legacy_attr_value;
             }
 
             public Boolean IsExistFullMatch(XmlElement element, String attr_name = "", String attr_value = "")
             {
-                return IsExistParam(element, attr_name, attr_value, true);
+                if (IsExistParam(element, attr_name, attr_value, true))
+                {
+                    return true;
+                }
+
+                // 呼び出し元が比較値を明示していない(=このコントロール自身のAttrValueで
+                // 比較している)場合のみ、旧キーでの一致も試す
+                if (attr_value == String.Empty && LegacyAttrValue != null)
+                {
+                    return IsExistParam(element, attr_name, LegacyAttrValue, true);
+                }
+                return false;
             }
 
             public Boolean IsExistPartMatch(XmlElement element, String attr_name = "", String attr_value = "")
@@ -1223,16 +1239,16 @@ namespace StandardTemplate
         }
 
         // コントロール登録
-        private static void AddRegistered<TDB>(ref TDB[] RegisteredCtrl, TDB Item, String AttrName, String AttrValue, String ElementValue) where TDB : OriginDB
+        private static void AddRegistered<TDB>(ref TDB[] RegisteredCtrl, TDB Item, String AttrName, String AttrValue, String ElementValue, String LegacyAttrValue = null) where TDB : OriginDB
         {
-            Item.SetDefaultParam(AttrName, AttrValue, ElementValue);
+            Item.SetDefaultParam(AttrName, AttrValue, ElementValue, LegacyAttrValue);
             Array.Resize(ref RegisteredCtrl, RegisteredCtrl.Length + 1);
             RegisteredCtrl[RegisteredCtrl.Length - 1] = Item;
         }
 
-        public void RegistCtrl(String AttrName, String AttrValue, TextBox Ctrl, String ElementValue = "")
+        public void RegistCtrl(String AttrName, String AttrValue, TextBox Ctrl, String ElementValue = "", String LegacyAttrValue = null)
         {
-            AddRegistered(ref RegTextCtrl, new TextCtrlDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue);
+            AddRegistered(ref RegTextCtrl, new TextCtrlDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue, LegacyAttrValue);
         }
 
         public void RegistCtrl(String AttrName, String AttrValue, RadioButton Ctrl, String ElementValue = "")
@@ -1240,9 +1256,9 @@ namespace StandardTemplate
             AddRegistered(ref RegRadioCtrl, new RadioButtonCtrlDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue);
         }
 
-        public void RegistCtrl(String AttrName, String AttrValue, CheckBox Ctrl, String ElementValue = "")
+        public void RegistCtrl(String AttrName, String AttrValue, CheckBox Ctrl, String ElementValue = "", String LegacyAttrValue = null)
         {
-            AddRegistered(ref RegCheckCtrl, new CheckBoxDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue);
+            AddRegistered(ref RegCheckCtrl, new CheckBoxDB { Ctrl = Ctrl }, AttrName, AttrValue, ElementValue, LegacyAttrValue);
         }
 
         public void RegistCtrl(String AttrName, String AttrValue, ComboBox Ctrl, String ElementValue = "")
@@ -2037,11 +2053,11 @@ namespace StandardTemplate
             }
 
             String value;
-            for (int i = 0; i < RegTextCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegTextCtrl[i]), out value)) { RegTextCtrl[i].Ctrl.Text = value; } }
-            for (int i = 0; i < RegRadioCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegRadioCtrl[i]), out value)) { RegRadioCtrl[i].Ctrl.Checked = util.GetBoolean(value); } }
-            for (int i = 0; i < RegCheckCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegCheckCtrl[i]), out value)) { RegCheckCtrl[i].Ctrl.Checked = util.GetBoolean(value); } }
-            for (int i = 0; i < RegComboCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegComboCtrl[i]), out value)) { RegComboCtrl[i].Ctrl.Text = value; } }
-            for (int i = 0; i < RegHScrollBarCtrl.Length; i++) { if (profile.Values.TryGetValue(GenericKey(RegHScrollBarCtrl[i]), out value)) { RegHScrollBarCtrl[i].Ctrl.Value = util.GetInteger(value); } }
+            for (int i = 0; i < RegTextCtrl.Length; i++) { if (TryGetGenericValue(profile, RegTextCtrl[i], out value)) { RegTextCtrl[i].Ctrl.Text = value; } }
+            for (int i = 0; i < RegRadioCtrl.Length; i++) { if (TryGetGenericValue(profile, RegRadioCtrl[i], out value)) { RegRadioCtrl[i].Ctrl.Checked = util.GetBoolean(value); } }
+            for (int i = 0; i < RegCheckCtrl.Length; i++) { if (TryGetGenericValue(profile, RegCheckCtrl[i], out value)) { RegCheckCtrl[i].Ctrl.Checked = util.GetBoolean(value); } }
+            for (int i = 0; i < RegComboCtrl.Length; i++) { if (TryGetGenericValue(profile, RegComboCtrl[i], out value)) { RegComboCtrl[i].Ctrl.Text = value; } }
+            for (int i = 0; i < RegHScrollBarCtrl.Length; i++) { if (TryGetGenericValue(profile, RegHScrollBarCtrl[i], out value)) { RegHScrollBarCtrl[i].Ctrl.Value = util.GetInteger(value); } }
 
             for (int i = 0; i < RegComboCtrlList.Length; i++)
             {
@@ -2097,6 +2113,24 @@ namespace StandardTemplate
         private static String GenericKey(OriginDB Ctrl)
         {
             return Ctrl.AttrName + "|" + Ctrl.AttrValue;
+        }
+
+        // GenericKeyで見つからなければ、LegacyAttrValue(旧キー)でも探す。
+        // typo修正等でAttrValueを変えたコントロールでも、旧キーで保存されたJSONを読めるようにするため
+        private static Boolean TryGetGenericValue(GenericProfile profile, OriginDB Ctrl, out String value)
+        {
+            if (profile.Values.TryGetValue(GenericKey(Ctrl), out value))
+            {
+                return true;
+            }
+
+            if (Ctrl.LegacyAttrValue != null)
+            {
+                return profile.Values.TryGetValue(Ctrl.AttrName + "|" + Ctrl.LegacyAttrValue, out value);
+            }
+
+            value = null;
+            return false;
         }
     }
 

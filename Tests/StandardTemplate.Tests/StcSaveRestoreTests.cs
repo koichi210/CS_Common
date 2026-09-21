@@ -316,5 +316,87 @@ namespace StandardTemplate.Tests
 
             Assert.AreEqual("要素名を変えた", textBox.Text);
         }
+
+        // --- LegacyAttrValue(typo修正等でキー名を変えても旧キーの設定ファイルを読める仕組み) ---
+
+        [TestMethod]
+        public void 旧キーで保存されたXMLもLegacyAttrValue指定で読み込める()
+        {
+            TextBox textBox = Track(new TextBox());
+            var profile = new TestProfile();
+            profile.RegistCtrl("Name", "NewKey", textBox, LegacyAttrValue: "OldKey");
+
+            // 旧キー("OldKey")で保存された設定ファイルを手動で用意する
+            string path = PathFor("legacy_xml");
+            File.WriteAllText(path,
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                "<root><Param Name=\"OldKey\">旧キーで保存された値</Param></root>");
+
+            Assert.IsTrue(profile.LoadXmlFile(path), "読み込みに成功するはず");
+            Assert.AreEqual("旧キーで保存された値", textBox.Text);
+        }
+
+        [TestMethod]
+        public void 新キーで保存したXMLはLegacyAttrValue指定があっても新キーの値が読める()
+        {
+            TextBox textBox = Track(new TextBox());
+            var profile = new TestProfile();
+            profile.RegistCtrl("Name", "NewKey", textBox, LegacyAttrValue: "OldKey");
+
+            textBox.Text = "新キーで保存したい値";
+            string path = PathFor("newkey_xml");
+            profile.SaveXmlFile(path);
+
+            textBox.Text = "書き換えてしまった値";
+            Assert.IsTrue(profile.LoadXmlFile(path));
+
+            Assert.AreEqual("新キーで保存したい値", textBox.Text);
+        }
+
+        [TestMethod]
+        public void 旧キーのGenericProfileもLegacyAttrValue指定で読み込める()
+        {
+            TextBox textBox = Track(new TextBox());
+            var profile = new TestProfile();
+            profile.RegistCtrl("Name", "NewKey", textBox, LegacyAttrValue: "OldKey");
+
+            var genericProfile = new GenericProfile();
+            genericProfile.Values["Name|OldKey"] = "旧キーのJSON値";
+
+            profile.ApplyGenericProfile(genericProfile);
+
+            Assert.AreEqual("旧キーのJSON値", textBox.Text);
+        }
+
+        [TestMethod]
+        public void 新旧両方のキーがあるGenericProfileは新キーが優先される()
+        {
+            TextBox textBox = Track(new TextBox());
+            var profile = new TestProfile();
+            profile.RegistCtrl("Name", "NewKey", textBox, LegacyAttrValue: "OldKey");
+
+            var genericProfile = new GenericProfile();
+            genericProfile.Values["Name|NewKey"] = "新キーのJSON値";
+            genericProfile.Values["Name|OldKey"] = "旧キーのJSON値(使われないはず)";
+
+            profile.ApplyGenericProfile(genericProfile);
+
+            Assert.AreEqual("新キーのJSON値", textBox.Text);
+        }
+
+        [TestMethod]
+        public void LegacyAttrValueを指定しなければ従来通り新キーのみ一致する()
+        {
+            TextBox textBox = Track(new TextBox());
+            var profile = new TestProfile();
+            profile.RegistCtrl("Name", "NewKey", textBox, "既定値");
+
+            var genericProfile = new GenericProfile();
+            genericProfile.Values["Name|OldKey"] = "無関係な値";
+
+            profile.ApplyGenericProfile(genericProfile);
+
+            Assert.AreEqual("既定値", textBox.Text, "対応するキーが無ければ既定値のまま");
+        }
     }
 }
