@@ -48,7 +48,7 @@ namespace StandardTemplate
             // 拡張子がxml->jsonへ切り替わっていたら、保存が成功した後で旧xmlを削除する
             DeleteMigratedXml(OriginalFileName, SaveFileName, InitialDirectory);
 
-            Utils.UpdateProfileList(ref ProfileCtrl, ProfileExtensions, Path.GetFileName(SaveFileName));
+            Utils.UpdateProfileList(ref ProfileCtrl, ProfileExtensions, Path.GetFileName(SaveFileName), InitialDirectory);
             MessageBox.Show(SuccessMessage + Environment.NewLine + SaveFileName);
             return SaveFileName;
         }
