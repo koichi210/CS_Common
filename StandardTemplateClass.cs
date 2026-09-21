@@ -808,6 +808,12 @@ namespace StandardTemplate
         // プロファイルをコンボボックスにリストアップ
         public void UpdateProfileList(ref ComboBox ComboCtrl, String DefaultProfileName = "", String DirectoryPath = "", String FileExtension = "*.xml")
         {
+            UpdateProfileList(ref ComboCtrl, new String[] { FileExtension }, DefaultProfileName, DirectoryPath);
+        }
+
+        // 設定ファイルをXMLからJSONへ移行中のプロジェクト向けに、複数の拡張子をまとめて一覧できる版
+        public void UpdateProfileList(ref ComboBox ComboCtrl, String[] FileExtensions, String DefaultProfileName = "", String DirectoryPath = "")
+        {
             if (DirectoryPath == String.Empty)
             {
                 DirectoryPath = Directory.GetCurrentDirectory();
@@ -822,17 +828,20 @@ namespace StandardTemplate
             }
 
             // ファイルをリストアップ(アクセス権の無いサブフォルダが1つでもあると例外になるため、その場合は一覧を更新しない)
-            String[] files;
+            List<String> files = new List<String>();
             try
             {
-                files = Directory.GetFiles(DirectoryPath, FileExtension, SearchOption.AllDirectories);
+                foreach (String extension in FileExtensions)
+                {
+                    files.AddRange(Directory.GetFiles(DirectoryPath, extension, SearchOption.AllDirectories));
+                }
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
                 return;
             }
 
-            SetComboBoxFromArray(ComboCtrl, files, DirectoryPath);
+            SetComboBoxFromArray(ComboCtrl, files.ToArray(), DirectoryPath);
             SetComboBoxText(ComboCtrl, DefaultProfileName);
         }
 
