@@ -2321,8 +2321,12 @@ namespace StandardTemplate
                 }
                 else if (DlgResult == DialogResult.Yes)
                 {
-                    // 既存のファイル名を使用
-                    SaveFileName = FileName;
+                    // 既存のファイル名を使用。xmlは撲滅していく方針のため、拡張子がxmlなら
+                    // jsonへ差し替える(呼び出し元が保存成功後に旧xmlを削除する)
+                    String path = (InitialDirectory != String.Empty) ? Path.Combine(InitialDirectory, FileName) : FileName;
+                    SaveFileName = path.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)
+                        ? Path.ChangeExtension(path, ".json")
+                        : path;
                 }
             }
 
@@ -2331,12 +2335,15 @@ namespace StandardTemplate
             {
                 // 任意のファイル名を指定
                 SaveFileDialog ofd = new SaveFileDialog();
-                ofd.FileName = FileName;
+                // JSON移行中のため、拡張子がxmlならjsonを既定の提案にする(そのままOKでJSON保存できるように)
+                ofd.FileName = FileName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)
+                    ? Path.ChangeExtension(FileName, ".json")
+                    : FileName;
                 if (InitialDirectory != String.Empty)
                 {
                     ofd.InitialDirectory = InitialDirectory;
                 }
-                ofd.Filter = "XMLファイル(*.xml)|*.xml|すべてのファイル(*.*)|*.*";
+                ofd.Filter = "JSONファイル(*.json)|*.json|XMLファイル(*.xml)|*.xml|すべてのファイル(*.*)|*.*";
                 ofd.Title = "保存する設定ファイルを選択してください";
 
                 if (ofd.ShowDialog() == DialogResult.OK)

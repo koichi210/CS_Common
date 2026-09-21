@@ -37,6 +37,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
@@ -55,6 +58,12 @@
     <Compile Include="..\..\AtomicFile.cs">
       <Link>AtomicFile.cs</Link>
     </Compile>
+    <Compile Include="..\..\JsonFileStorage.cs">
+      <Link>JsonFileStorage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JsonSaveRestore.cs">
+      <Link>JsonSaveRestore.cs</Link>
+    </Compile>
     <Compile Include="..\..\StandardTemplateClass.cs">
       <Link>StandardTemplateClass.cs</Link>
     </Compile>
@@ -68,6 +77,7 @@
     <Compile Include="BehaviorSnapshotTests.cs" />
     <Compile Include="StcUtilsTests.cs" />
     <Compile Include="FixedBugRegressionTests.cs" />
+    <Compile Include="JsonSaveRestoreTests.cs" />
     <Compile Include="StcSaveRestoreTests.cs" />
     <Compile Include="StcFileInputOutputTests.cs" />
     <Compile Include="NaturalStringComparerTests.cs" />

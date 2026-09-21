@@ -27,7 +27,10 @@ namespace StandardTemplate
                                                    String InitialDirectory = "",
                                                    String SuccessMessage = "設定値を保存しました♪")
         {
-            String SaveFileName = FileIO.SelectSaveFileName(ProfileCtrl.Text, InitialDirectory);
+            // 削除対象の判定に使うため、SelectSaveFileNameを呼ぶ前の選択内容を覚えておく
+            String OriginalFileName = ProfileCtrl.Text;
+
+            String SaveFileName = FileIO.SelectSaveFileName(OriginalFileName, InitialDirectory);
             if (String.IsNullOrEmpty(SaveFileName))
             {
                 // ダイアログでキャンセルされた
@@ -41,9 +44,43 @@ namespace StandardTemplate
                 return "";
             }
 
+            // xml撲滅方針: 「現在のファイルに保存しますか？」で「はい」を選んだ結果、
+            // 拡張子がxml->jsonへ切り替わっていたら、保存が成功した後で旧xmlを削除する
+            DeleteMigratedXml(OriginalFileName, SaveFileName, InitialDirectory);
+
             Utils.UpdateProfileList(ref ProfileCtrl, ProfileExtensions, Path.GetFileName(SaveFileName));
             MessageBox.Show(SuccessMessage + Environment.NewLine + SaveFileName);
             return SaveFileName;
+        }
+
+        // internal: テスト(StandardTemplate.Tests)から直接呼べるようにするため
+        internal static void DeleteMigratedXml(String OriginalFileName, String SaveFileName, String InitialDirectory)
+        {
+            if (!OriginalFileName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) ||
+                !SaveFileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            String oldPath = (InitialDirectory != String.Empty) ? Path.Combine(InitialDirectory, OriginalFileName) : OriginalFileName;
+
+            // 念のため、拡張子違いの同名ファイルであることを確認してから消す
+            if (!String.Equals(Path.GetFileNameWithoutExtension(oldPath), Path.GetFileNameWithoutExtension(SaveFileName), StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            try
+            {
+                if (File.Exists(oldPath))
+                {
+                    File.Delete(oldPath);
+                }
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                // 消せなくても保存自体は成功しているので実害は無い
+            }
         }
 
         public static Boolean Save(StcSaveRestore SaveRestore, String FilePath)

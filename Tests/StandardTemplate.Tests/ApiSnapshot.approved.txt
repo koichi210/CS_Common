@@ -51,6 +51,17 @@ TYPE public enum StandardTemplate.CaptWindow+MOUSE_EVENT
 TYPE public class StandardTemplate.GenericProfile
     CTOR   public GenericProfile()
 
+TYPE public static class StandardTemplate.JsonFileStorage
+    METHOD public static T Load<T>(String filePath)
+    METHOD public static Void Save<T>(String filePath, T data)
+
+TYPE internal static class StandardTemplate.JsonSaveRestore
+    METHOD internal static Void DeleteMigratedXml(String OriginalFileName, String SaveFileName, String InitialDirectory)
+    METHOD public static Boolean Load(StcSaveRestore SaveRestore, String FilePath)
+    METHOD public static Boolean LoadWithMigration(StcSaveRestore SaveRestore, String JsonPath, String XmlPath, Func<String, Boolean> LoadXml)
+    METHOD public static Boolean Save(StcSaveRestore SaveRestore, String FilePath)
+    METHOD public static String SaveProfileWithDialog(StcUtils Utils, StcFileInputOutput FileIO, ComboBox ProfileCtrl, String[] ProfileExtensions, Func<String, Boolean> Save, String InitialDirectory = "", String SuccessMessage = "設定値を保存しました♪")
+
 TYPE public class StandardTemplate.NaturalStringComparer
     CTOR   public NaturalStringComparer()
     FIELD  public static readonly NaturalStringComparer Instance
@@ -222,4 +233,4 @@ TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   WINDOWS_FULLPATH = 0
     ENUM   WINDOWS_PATH = 3
 
-# total: 15 types / 190 members
+# total: 17 types / 197 members
