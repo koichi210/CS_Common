@@ -223,8 +223,8 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public Void SetCurrentDirectory()
     METHOD public Void SetDataGridCell(DataGridView dgv, Int32 RowCount, Int32 ColumnCount, String Val)
     METHOD public Void SetDragFile(DragEventArgs e)
-    METHOD public Void UpdateProfileList(ref ComboBox ComboCtrl, String DefaultProfileName = "", String DirectoryPath = "", String FileExtension = "*.xml")
-    METHOD public Void UpdateProfileList(ref ComboBox ComboCtrl, String[] FileExtensions, String DefaultProfileName = "", String DirectoryPath = "")
+    METHOD public Void UpdateProfileList(ComboBox ComboCtrl, String DefaultProfileName = "", String DirectoryPath = "", String FileExtension = "*.xml")
+    METHOD public Void UpdateProfileList(ComboBox ComboCtrl, String[] FileExtensions, String DefaultProfileName = "", String DirectoryPath = "")
 
 TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
     ENUM   LINUX_PATH = 2

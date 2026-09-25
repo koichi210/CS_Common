@@ -809,13 +809,15 @@ namespace StandardTemplate
         }
 
         // プロファイルをコンボボックスにリストアップ
-        public void UpdateProfileList(ref ComboBox ComboCtrl, String DefaultProfileName = "", String DirectoryPath = "", String FileExtension = "*.xml")
+        // ComboCtrlは内部で再代入することはないため、ref不要のComboBox(値渡し)として受け取る。
+        // これによりTextBoxEx/ComboBoxEx([[_Common/ComboBoxEx.cs]])のような派生型もそのまま渡せる
+        public void UpdateProfileList(ComboBox ComboCtrl, String DefaultProfileName = "", String DirectoryPath = "", String FileExtension = "*.xml")
         {
-            UpdateProfileList(ref ComboCtrl, new String[] { FileExtension }, DefaultProfileName, DirectoryPath);
+            UpdateProfileList(ComboCtrl, new String[] { FileExtension }, DefaultProfileName, DirectoryPath);
         }
 
         // 設定ファイルをXMLからJSONへ移行中のプロジェクト向けに、複数の拡張子をまとめて一覧できる版
-        public void UpdateProfileList(ref ComboBox ComboCtrl, String[] FileExtensions, String DefaultProfileName = "", String DirectoryPath = "")
+        public void UpdateProfileList(ComboBox ComboCtrl, String[] FileExtensions, String DefaultProfileName = "", String DirectoryPath = "")
         {
             if (DirectoryPath == String.Empty)
             {
