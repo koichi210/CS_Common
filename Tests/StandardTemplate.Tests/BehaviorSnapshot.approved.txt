@@ -138,7 +138,7 @@
   LF2CRLF ""        ->  ""
   CRLF2LF ""        ->  ""
 
-## StcUtils.ChangeNewLineCode(ENCORD_TYPE, String)
+## StcUtils.ChangeNewLineCode(ENCODING_TYPE, String)
    # いったん LF に統一してから、SHIFT_JIS のときだけ CRLF に戻す。
   SHIFT_JIS, "a\r\nb"  ->  "a\r\nb"
   SHIFT_JIS, "a\nb"    ->  "a\r\nb"

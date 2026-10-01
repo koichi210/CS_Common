@@ -246,7 +246,7 @@ namespace StandardTemplate
             {
                 DialogResult dlgResult = MessageBox.Show(
                     "読み取り専用属性を解除しますか？" + Environment.NewLine + fileName,
-                    "Infomation",
+                    "Information",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Information);
 
                 if (dlgResult == DialogResult.Yes)

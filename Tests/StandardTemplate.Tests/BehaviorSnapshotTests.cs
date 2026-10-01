@@ -242,7 +242,7 @@ namespace StandardTemplate.Tests
                 r.Case("CRLF2LF " + BehaviorRecorder.Show(t), () => util.ChangeNewLineCodeCRLF2LF(t));
             }
 
-            r.Section("StcUtils.ChangeNewLineCode(ENCORD_TYPE, String)");
+            r.Section("StcUtils.ChangeNewLineCode(ENCODING_TYPE, String)");
             r.Note("いったん LF に統一してから、SHIFT_JIS のときだけ CRLF に戻す。");
             foreach (StcFileInputOutput.ENCODING_TYPE t in
                      (StcFileInputOutput.ENCODING_TYPE[])Enum.GetValues(typeof(StcFileInputOutput.ENCODING_TYPE)))

@@ -1,7 +1,7 @@
 // <root><Setting attribute="キー">値</Setting>...</root> という形のXML設定ファイルを、
 // キーと値の対応として読み書きする。
 //
-// CaptureWindow / PictTriming / PictMerge / PictMerge2 の4プロジェクトが、
+// CaptureWindow / PictTrimming / PictMerge / PictMerge2 の4プロジェクトが、
 // それぞれ同じ形のXMLを手書きで組み立て、読み込みは属性名のif/else連打で
 // 取り出していたため集約した。ファイル形式は従来とまったく同じなので、
 // これまでの設定ファイルはそのまま読める。
