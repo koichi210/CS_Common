@@ -60,22 +60,22 @@ namespace StandardTemplate.Tests
         // 「入力が変わっても常に成り立ってほしい関係」を書く。
 
         [TestMethod]
-        public void AssortList_順番は変わっても要素の集合は変わらない()
+        public void ShuffleArray_順番は変わっても要素の集合は変わらない()
         {
             // 実装が乱数（Guid）で並べ替えるため、結果を固定値と比較できない。
             // 「何が返るか」ではなく「何が保たれるか」を確かめる。
             string[] source = { "a", "b", "c", "d", "e" };
 
-            string[] actual = util.AssortList(source);
+            string[] actual = util.ShuffleArray(source);
 
             Assert.AreEqual(source.Length, actual.Length, "件数が変わってはいけない");
             CollectionAssert.AreEquivalent(source, actual, "順序を無視すれば中身は同じはず");
         }
 
         [TestMethod]
-        public void AssortList_空配列を渡しても落ちない()
+        public void ShuffleArray_空配列を渡しても落ちない()
         {
-            Assert.AreEqual(0, util.AssortList(new string[0]).Length);
+            Assert.AreEqual(0, util.ShuffleArray(new string[0]).Length);
         }
 
         [TestMethod]

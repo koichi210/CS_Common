@@ -2,10 +2,10 @@
 // FFEdit(ファイル名変更・移動)とFileArranger(フォルダ振り分け)にまったく同じ実装が
 // 別々に置かれていたため、_Commonへ集約した(bool/Booleanの表記ゆれ以外の差は無かった)。
 //
-// 使い方: 1回の操作を始めるときにIncrementRegistNumberで番号を進め、
-// 操作ごとにSetRestoreListで「戻すための情報」を積む。元に戻すときは
-// DecrementRegistNumberで番号を戻し、IsExistRestoreListがtrueの間
-// GetRestoreListで取り出す(同じ番号の分だけ取り出せる)。
+// 使い方: 1回の操作を始めるときにIncrementSerialNumberで番号を進め、
+// 操作ごとにAddRestoreItemで「戻すための情報」を積む。元に戻すときは
+// DecrementSerialNumberで番号を戻し、HasRestoreItemがtrueの間
+// PopRestoreItemで取り出す(同じ番号の分だけ取り出せる)。
 using System;
 using System.Collections.Generic;
 
@@ -19,23 +19,23 @@ namespace StandardTemplate
             public String SrcName;      // 記憶するデータ
             public String DestName;     // 記憶するデータ
 
-            public RestoreStruct(int serial_number, string src_name, string dest_name)
+            public RestoreStruct(int serialNumber, string srcName, string destName)
             {
-                SerialNumber = serial_number;
-                SrcName = src_name;
-                DestName = dest_name;
+                SerialNumber = serialNumber;
+                SrcName = srcName;
+                DestName = destName;
             }
         }
 
         private int CurrentIdx = 0;
         private List<RestoreStruct> RestoreList = new List<RestoreStruct>();
 
-        public void IncrementRegistNumber()
+        public void IncrementSerialNumber()
         {
             CurrentIdx++;
         }
 
-        public Boolean DecrementRegistNumber()
+        public Boolean DecrementSerialNumber()
         {
             if (CurrentIdx == 0)
             {
@@ -46,29 +46,29 @@ namespace StandardTemplate
             return true;
         }
 
-        public void SetRestoreList(String SrcName, String DestName)
+        public void AddRestoreItem(String srcName, String destName)
         {
-            RestoreList.Add(new RestoreStruct(CurrentIdx, SrcName, DestName));
+            RestoreList.Add(new RestoreStruct(CurrentIdx, srcName, destName));
         }
 
-        public void GetRestoreList(ref String SrcName, ref String DestName)
+        public void PopRestoreItem(ref String srcName, ref String destName)
         {
-            int LastIdx = RestoreList.Count - 1;
+            int lastIdx = RestoreList.Count - 1;
 
-            SrcName = RestoreList[LastIdx].SrcName;
-            DestName = RestoreList[LastIdx].DestName;
-            RestoreList.RemoveAt(LastIdx);
+            srcName = RestoreList[lastIdx].SrcName;
+            destName = RestoreList[lastIdx].DestName;
+            RestoreList.RemoveAt(lastIdx);
         }
 
-        public Boolean IsExistRestoreList()
+        public Boolean HasRestoreItem()
         {
             if (RestoreList.Count == 0)
             {
                 return false;
             }
 
-            int ListEndIdx = RestoreList.Count - 1;
-            return RestoreList[ListEndIdx].SerialNumber == CurrentIdx;
+            int listEndIdx = RestoreList.Count - 1;
+            return RestoreList[listEndIdx].SerialNumber == CurrentIdx;
         }
     }
 }

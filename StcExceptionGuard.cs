@@ -15,24 +15,24 @@ internal static class StcExceptionGuard
         AppDomain.CurrentDomain.UnhandledException += (s, e) => Notify(e.ExceptionObject as Exception, false);
     }
 
-    private static void Notify(Exception ex, Boolean CanContinue)
+    private static void Notify(Exception ex, Boolean canContinue)
     {
         // タイマー処理などで同じ例外が連発しても、ダイアログが無限に積み重ならないようにする
-        if (Interlocked.Exchange(ref IsShowing, 1) == 1 && CanContinue)
+        if (Interlocked.Exchange(ref IsShowing, 1) == 1 && canContinue)
         {
             return;
         }
 
         try
         {
-            String message = CanContinue
+            String message = canContinue
                 ? "予期しないエラーが発生したよ(処理は継続するね)"
                 : "予期しないエラーが発生したよ(アプリを終了するね)";
             MessageBox.Show(
                 message + Environment.NewLine + Environment.NewLine + ex,
                 Application.ProductName + " - エラー",
                 MessageBoxButtons.OK,
-                CanContinue ? MessageBoxIcon.Warning : MessageBoxIcon.Error);
+                canContinue ? MessageBoxIcon.Warning : MessageBoxIcon.Error);
         }
         finally
         {

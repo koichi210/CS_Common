@@ -16,7 +16,7 @@ namespace StandardTemplate
     public class NaturalStringComparer : IComparer<String>, IComparer
     {
         // Comparer生成のたびにnewしなくて済むよう、使い回せる既定インスタンス
-        public static readonly NaturalStringComparer Instance = new NaturalStringComparer();
+        public static NaturalStringComparer Instance { get; } = new NaturalStringComparer();
 
         public int Compare(String x, String y)
         {

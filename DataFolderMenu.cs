@@ -45,17 +45,17 @@ namespace StandardTemplate
         private const int SysMenuId_ChangeDataFolder = 0x1000;
 
         // OnHandleCreated(ウィンドウハンドル生成後)から呼ぶこと
-        public static void AppendToSystemMenu(Form TargetForm)
+        public static void AppendToSystemMenu(Form targetForm)
         {
-            IntPtr systemMenu = GetSystemMenu(TargetForm.Handle, false);
+            IntPtr systemMenu = GetSystemMenu(targetForm.Handle, false);
             AppendMenu(systemMenu, MF_SEPARATOR, 0, String.Empty);
             AppendMenu(systemMenu, MF_STRING, SysMenuId_ChangeDataFolder, "データ保存先を変更(&D)...");
         }
 
         // アプリ独自の項目を足したい場合に使う(IDは16の倍数かつ0xF000未満、0x1000は予約済み)
-        public static void AppendMenuItem(Form TargetForm, int SysMenuId, String Text)
+        public static void AppendMenuItem(Form targetForm, int sysMenuId, String text)
         {
-            AppendMenu(GetSystemMenu(TargetForm.Handle, false), MF_STRING, (uint)SysMenuId, Text);
+            AppendMenu(GetSystemMenu(targetForm.Handle, false), MF_STRING, (uint)sysMenuId, text);
         }
 
         public static Boolean IsChangeDataFolderCommand(Message m)
@@ -63,18 +63,18 @@ namespace StandardTemplate
             return IsSysCommand(m, SysMenuId_ChangeDataFolder);
         }
 
-        public static Boolean IsSysCommand(Message m, int SysMenuId)
+        public static Boolean IsSysCommand(Message m, int sysMenuId)
         {
-            return m.Msg == WM_SYSCOMMAND && (m.WParam.ToInt32() & 0xFFF0) == SysMenuId;
+            return m.Msg == WM_SYSCOMMAND && (m.WParam.ToInt32() & 0xFFF0) == sysMenuId;
         }
 
         // 保存先を選び直し、exe直下のポインタファイル(DataFolder.txt)を書き換える。
         // 実行中のCurrentFolderはその場では切り替えず、変更は次回起動時から反映する
-        public static void ChangeDataFolder(String AppName, String CurrentFolder, Action<String, String> MigrateFiles)
+        public static void ChangeDataFolder(String appName, String currentFolder, Action<String, String> migrateFiles)
         {
             // フォルダ選択ダイアログの実装は[[_Common/DataFolderChooser.cs]]に集約してある
             String selectedFolder = DataFolderChooser.ChooseFolder(
-                "プロファイルの保存先フォルダを選んでください", CurrentFolder);
+                "プロファイルの保存先フォルダを選んでください", currentFolder);
 
             if (String.IsNullOrEmpty(selectedFolder))
             {
@@ -83,24 +83,24 @@ namespace StandardTemplate
 
             if (String.Equals(
                 Path.GetFullPath(selectedFolder).TrimEnd('\\'),
-                Path.GetFullPath(CurrentFolder).TrimEnd('\\'),
+                Path.GetFullPath(currentFolder).TrimEnd('\\'),
                 StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
-            if (MigrateFiles != null)
+            if (migrateFiles != null)
             {
-                MigrateFiles(CurrentFolder, selectedFolder);
+                migrateFiles(currentFolder, selectedFolder);
             }
 
-            UserDataLocation.SetUserDataFolder(AppName, selectedFolder);
+            UserDataLocation.SetUserDataFolder(appName, selectedFolder);
 
             MessageBox.Show(
                 "保存先を変更したよ" + Environment.NewLine + selectedFolder + Environment.NewLine + Environment.NewLine
-                    + "今のセッションはこれまで通り" + Environment.NewLine + CurrentFolder + Environment.NewLine
+                    + "今のセッションはこれまで通り" + Environment.NewLine + currentFolder + Environment.NewLine
                     + "を使うよ。新しい保存先は次回起動時から反映されるよ",
-                AppName + " - データ保存先の変更",
+                appName + " - データ保存先の変更",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
@@ -108,13 +108,13 @@ namespace StandardTemplate
         // 旧フォルダのプロファイル(*.xml / *.json)を新フォルダへ移す。
         // 移動するかは利用者に確認し、同名ファイルがある分はスキップする。
         // IsExcludeにtrueを返させると、そのファイルは移動対象から外れる(プロファイル以外の設定ファイル等)
-        public static void MoveProfiles(String OldFolder, String NewFolder, String AppName, Func<String, Boolean> IsExclude = null)
+        public static void MoveProfiles(String oldFolder, String newFolder, String appName, Func<String, Boolean> isExclude = null)
         {
             DialogResult moveResult = MessageBox.Show(
                 "既存のプロファイルを新しい保存先に移動しますか？" + Environment.NewLine + Environment.NewLine
-                    + "移動元: " + OldFolder + Environment.NewLine
-                    + "移動先: " + NewFolder,
-                AppName + " - プロファイルの引っ越し",
+                    + "移動元: " + oldFolder + Environment.NewLine
+                    + "移動先: " + newFolder,
+                appName + " - プロファイルの引っ越し",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
@@ -126,10 +126,10 @@ namespace StandardTemplate
             List<String> movedFiles = new List<String>();
             List<String> skippedFiles = new List<String>();
 
-            foreach (String sourcePath in ListProfiles(OldFolder, IsExclude))
+            foreach (String sourcePath in ListProfiles(oldFolder, isExclude))
             {
                 String fileName = Path.GetFileName(sourcePath);
-                String destPath = Path.Combine(NewFolder, fileName);
+                String destPath = Path.Combine(newFolder, fileName);
 
                 if (File.Exists(destPath))
                 {
@@ -158,18 +158,18 @@ namespace StandardTemplate
 
             MessageBox.Show(
                 message,
-                AppName + " - プロファイルの引っ越し",
+                appName + " - プロファイルの引っ越し",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
         }
 
-        private static List<String> ListProfiles(String Folder, Func<String, Boolean> IsExclude)
+        private static List<String> ListProfiles(String folder, Func<String, Boolean> isExclude)
         {
             List<String> files = new List<String>();
-            files.AddRange(Directory.GetFiles(Folder, "*.xml"));
-            foreach (String path in Directory.GetFiles(Folder, "*.json"))
+            files.AddRange(Directory.GetFiles(folder, "*.xml"));
+            foreach (String path in Directory.GetFiles(folder, "*.json"))
             {
-                if (IsExclude == null || !IsExclude(path))
+                if (isExclude == null || !isExclude(path))
                 {
                     files.Add(path);
                 }

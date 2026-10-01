@@ -8,33 +8,33 @@ namespace StandardTemplate
 {
     internal static class AtomicFile
     {
-        public static void Write(String FilePath, Action<String> WriteTo)
+        public static void Write(String filePath, Action<String> writeTo)
         {
-            String TempPath = FilePath + ".tmp";
+            String tempPath = filePath + ".tmp";
             try
             {
-                WriteTo(TempPath);
-                if (File.Exists(FilePath))
+                writeTo(tempPath);
+                if (File.Exists(filePath))
                 {
-                    File.Replace(TempPath, FilePath, null);
+                    File.Replace(tempPath, filePath, null);
                 }
                 else
                 {
-                    File.Move(TempPath, FilePath);
+                    File.Move(tempPath, filePath);
                 }
             }
             finally
             {
-                if (File.Exists(TempPath))
+                if (File.Exists(tempPath))
                 {
-                    File.Delete(TempPath);
+                    File.Delete(tempPath);
                 }
             }
         }
 
-        public static void WriteAllText(String FilePath, String Text, Encoding Enc)
+        public static void WriteAllText(String filePath, String text, Encoding enc)
         {
-            Write(FilePath, TempPath => File.WriteAllText(TempPath, Text, Enc));
+            Write(filePath, tempPath => File.WriteAllText(tempPath, text, enc));
         }
     }
 }

@@ -40,7 +40,7 @@ namespace GlobalHook
             /// </summary>
             /// <param name="nCode">フックプロシージャに渡すフックコード</param>
             /// <param name="msg">フックプロシージャに渡す値</param>
-            /// <param name="msllhookstruct">フックプロシージャに渡す値</param>
+            /// <param name="kbdllhookstruct">フックプロシージャに渡す値</param>
             /// <returns>フックチェーン内の次のフックプロシージャの戻り値</returns>
             public delegate System.IntPtr KeyboardHookCallback(int nCode, uint msg, ref KBDLLHOOKSTRUCT kbdllhookstruct);
 
@@ -64,7 +64,7 @@ namespace GlobalHook
             /// <param name="hhk">現在のフックのハンドル</param>
             /// <param name="nCode">フックプロシージャに渡すフックコード</param>
             /// <param name="msg">フックプロシージャに渡す値</param>
-            /// <param name="msllhookstruct">フックプロシージャに渡す値</param>
+            /// <param name="kbdllhookstruct">フックプロシージャに渡す値</param>
             /// <returns>フックチェーン内の次のフックプロシージャの戻り値</returns>
             [System.Runtime.InteropServices.DllImport("user32.dll")]
             public static extern System.IntPtr CallNextHookEx(System.IntPtr hhk, int nCode, uint msg, ref KBDLLHOOKSTRUCT kbdllhookstruct);
@@ -130,8 +130,7 @@ namespace GlobalHook
         /// <summary>
         /// フックプロシージャ内でのイベント用のデリゲート
         /// </summary>
-        /// <param name="msg">キーボードに関するウィンドウメッセージ</param>
-        /// <param name="msllhookstruct">低レベルのキーボードの入力イベントの構造体</param>
+        /// <param name="state">キーボードの状態</param>
         public delegate void HookHandler(ref StateKeyboard state);
 
         /// <summary>
@@ -293,7 +292,7 @@ namespace GlobalHook
         /// </summary>
         /// <param name="nCode">フックプロシージャに渡すフックコード</param>
         /// <param name="msg">フックプロシージャに渡す値</param>
-        /// <param name="msllhookstruct">フックプロシージャに渡す値</param>
+        /// <param name="s">フックプロシージャに渡す値</param>
         /// <returns>フックチェーン内の次のフックプロシージャの戻り値</returns>
         private static System.IntPtr HookProcedure(int nCode, uint msg, ref KBDLLHOOKSTRUCT s)
         {
@@ -425,8 +424,7 @@ namespace GlobalHook
         /// <summary>
         /// フックプロシージャ内でのイベント用のデリゲート
         /// </summary>
-        /// <param name="msg">マウスに関するウィンドウメッセージ</param>
-        /// <param name="msllhookstruct">低レベルのマウスの入力イベントの構造体</param>
+        /// <param name="state">マウスの状態</param>
         public delegate void HookHandler(ref StateMouse state);
 
         /// <summary>
@@ -598,7 +596,7 @@ namespace GlobalHook
         /// </summary>
         /// <param name="nCode">フックプロシージャに渡すフックコード</param>
         /// <param name="msg">フックプロシージャに渡す値</param>
-        /// <param name="msllhookstruct">フックプロシージャに渡す値</param>
+        /// <param name="s">フックプロシージャに渡す値</param>
         /// <returns>フックチェーン内の次のフックプロシージャの戻り値</returns>
         private static System.IntPtr HookProcedure(int nCode, uint msg, ref MSLLHOOKSTRUCT s)
         {
@@ -664,7 +662,7 @@ namespace GlobalHook
                     // WM_MBUTTONUP
                     return Stroke.MIDDLE_UP;
                 case 0x020A:
-                    // WM_MOUSEWHEE
+                    // WM_MOUSEWHEEL
                     return ((short)((s.mouseData >> 16) & 0xffff) > 0) ? Stroke.WHEEL_UP : Stroke.WHEEL_DOWN;
                 case 0x20B:
                     // WM_XBUTTONDOWN

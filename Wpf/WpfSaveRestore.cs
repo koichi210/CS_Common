@@ -1,4 +1,4 @@
-// StcSaveRestore([[_Common/StandardTemplateClass.cs]])のRegistCtrl方式を、WPFのコントロールで使えるようにしたもの。
+// StcSaveRestore([[_Common/StandardTemplateClass.cs]])のRegisterCtrl方式を、WPFのコントロールで使えるようにしたもの。
 // 保存形式はStcSaveRestore.BuildGenericProfile/ApplyGenericProfileと同じGenericProfile(JSON)で、
 // キーも同じ"AttrName|AttrValue"にしてある。WinForms版と同じAttrName/AttrValueで登録すれば、
 // WinForms版で保存したプロファイルをWPF版でそのまま読める(逆も同じ)。
@@ -40,76 +40,76 @@ namespace StandardTemplate.Wpf
         private readonly List<ListEntry> Lists = new List<ListEntry>();
         private readonly List<GridEntry> Grids = new List<GridEntry>();
 
-        private static String MakeKey(String AttrName, String AttrValue)
+        private static String MakeKey(String attrName, String attrValue)
         {
-            return AttrName + "|" + AttrValue;
+            return attrName + "|" + attrValue;
         }
 
-        // 任意の値を登録する(Get/Setを渡せば、TextBox等以外の値も保存対象にできる)
-        public void RegistValue(String AttrName, String AttrValue, Func<String> Get, Action<String> Set, String ElementValue = "", String LegacyAttrValue = null)
+        // 任意の値を登録する(getter/setterを渡せば、TextBox等以外の値も保存対象にできる)
+        public void RegisterValue(String attrName, String attrValue, Func<String> getter, Action<String> setter, String defaultValue = "", String legacyAttrValue = null)
         {
             Values.Add(new ValueEntry
             {
-                Key = MakeKey(AttrName, AttrValue),
-                LegacyKey = (LegacyAttrValue == null) ? null : MakeKey(AttrName, LegacyAttrValue),
-                DefaultValue = ElementValue,
-                Get = Get,
-                Set = Set,
+                Key = MakeKey(attrName, attrValue),
+                LegacyKey = (legacyAttrValue == null) ? null : MakeKey(attrName, legacyAttrValue),
+                DefaultValue = defaultValue,
+                Get = getter,
+                Set = setter,
             });
         }
 
-        public void RegistList(String AttrName, String AttrValue, Func<List<String>> Get, Action<List<String>> Set)
+        public void RegisterList(String attrName, String attrValue, Func<List<String>> getter, Action<List<String>> setter)
         {
-            Lists.Add(new ListEntry { Key = MakeKey(AttrName, AttrValue), Get = Get, Set = Set });
+            Lists.Add(new ListEntry { Key = MakeKey(attrName, attrValue), Get = getter, Set = setter });
         }
 
         // DataGrid等の表データ(行×列の文字列)を登録する
-        public void RegistGrid(String AttrName, String AttrValue, Func<List<List<String>>> Get, Action<List<List<String>>> Set)
+        public void RegisterGrid(String attrName, String attrValue, Func<List<List<String>>> getter, Action<List<List<String>>> setter)
         {
-            Grids.Add(new GridEntry { Key = MakeKey(AttrName, AttrValue), Get = Get, Set = Set });
+            Grids.Add(new GridEntry { Key = MakeKey(attrName, attrValue), Get = getter, Set = setter });
         }
 
-        public void RegistCtrl(String AttrName, String AttrValue, TextBox Ctrl, String ElementValue = "", String LegacyAttrValue = null)
+        public void RegisterCtrl(String attrName, String attrValue, TextBox ctrl, String defaultValue = "", String legacyAttrValue = null)
         {
-            RegistValue(AttrName, AttrValue, () => Ctrl.Text, v => Ctrl.Text = v, ElementValue, LegacyAttrValue);
+            RegisterValue(attrName, attrValue, () => ctrl.Text, v => ctrl.Text = v, defaultValue, legacyAttrValue);
         }
 
         // CheckBox/RadioButton。WinForms版と同じく"True"/"False"の文字列で保存する
-        public void RegistCtrl(String AttrName, String AttrValue, ToggleButton Ctrl, String ElementValue = "", String LegacyAttrValue = null)
+        public void RegisterCtrl(String attrName, String attrValue, ToggleButton ctrl, String defaultValue = "", String legacyAttrValue = null)
         {
-            RegistValue(AttrName, AttrValue, () => (Ctrl.IsChecked == true).ToString(), v => Ctrl.IsChecked = (v == "True"), ElementValue, LegacyAttrValue);
+            RegisterValue(attrName, attrValue, () => (ctrl.IsChecked == true).ToString(), v => ctrl.IsChecked = (v == "True"), defaultValue, legacyAttrValue);
         }
 
-        // ComboBoxの入力欄の文字列(Text)を保存する。項目一覧を保存したい場合はRegistCtrlList
-        public void RegistCtrl(String AttrName, String AttrValue, ComboBox Ctrl, String ElementValue = "")
+        // ComboBoxの入力欄の文字列(Text)を保存する。項目一覧を保存したい場合はRegisterCtrlList
+        public void RegisterCtrl(String attrName, String attrValue, ComboBox ctrl, String defaultValue = "")
         {
-            RegistValue(AttrName, AttrValue, () => Ctrl.Text, v => Ctrl.Text = v, ElementValue);
+            RegisterValue(attrName, attrValue, () => ctrl.Text, v => ctrl.Text = v, defaultValue);
         }
 
         // ScrollBar/Slider等。WinForms版のHScrollBarと同じく整数で保存する
-        public void RegistCtrl(String AttrName, String AttrValue, RangeBase Ctrl, int ElementValue = 0)
+        public void RegisterCtrl(String attrName, String attrValue, RangeBase ctrl, int defaultValue = 0)
         {
-            RegistValue(AttrName, AttrValue, () => ((int)Ctrl.Value).ToString(), v =>
+            RegisterValue(attrName, attrValue, () => ((int)ctrl.Value).ToString(), v =>
             {
                 int parsed;
                 if (int.TryParse(v, out parsed))
                 {
-                    Ctrl.Value = parsed;
+                    ctrl.Value = parsed;
                 }
-            }, ElementValue.ToString());
+            }, defaultValue.ToString());
         }
 
         // ComboBoxの項目一覧(履歴)を保存する。ItemsSourceではなくItemsに直接文字列を入れる使い方が前提
-        public void RegistCtrlList(String AttrName, String AttrValue, ComboBox Ctrl)
+        public void RegisterCtrlList(String attrName, String attrValue, ComboBox ctrl)
         {
-            RegistList(AttrName, AttrValue,
-                () => Ctrl.Items.Cast<Object>().Select(item => item.ToString()).ToList(),
+            RegisterList(attrName, attrValue,
+                () => ctrl.Items.Cast<Object>().Select(item => item.ToString()).ToList(),
                 items =>
                 {
-                    Ctrl.Items.Clear();
+                    ctrl.Items.Clear();
                     foreach (String item in items)
                     {
-                        Ctrl.Items.Add(item);
+                        ctrl.Items.Add(item);
                     }
                 });
         }
@@ -127,7 +127,7 @@ namespace StandardTemplate.Wpf
         // profileがnullなら既定値に戻すだけになる
         public void ApplyGenericProfile(GenericProfile profile)
         {
-            // 一覧(Items.Clear)を先に戻す。同じComboBoxをRegistCtrlとRegistCtrlListの両方で登録した場合、
+            // 一覧(Items.Clear)を先に戻す。同じComboBoxをRegisterCtrlとRegisterCtrlListの両方で登録した場合、
             // 値(Text)を先に入れるとWPFではItems.Clearで消えてしまうため
             foreach (ListEntry entry in Lists)
             {
@@ -164,11 +164,11 @@ namespace StandardTemplate.Wpf
             }
         }
 
-        public Boolean Save(String FilePath)
+        public Boolean Save(String filePath)
         {
             try
             {
-                JsonFileStorage.Save(FilePath, BuildGenericProfile());
+                JsonFileStorage.Save(filePath, BuildGenericProfile());
                 return true;
             }
             catch (Exception)
@@ -178,9 +178,9 @@ namespace StandardTemplate.Wpf
         }
 
         // ファイルが無い・壊れている場合はfalseを返し、コントロールは今の値のまま変えない
-        public Boolean Load(String FilePath)
+        public Boolean Load(String filePath)
         {
-            GenericProfile profile = JsonFileStorage.Load<GenericProfile>(FilePath);
+            GenericProfile profile = JsonFileStorage.Load<GenericProfile>(filePath);
             if (profile == null)
             {
                 return false;
@@ -189,10 +189,10 @@ namespace StandardTemplate.Wpf
             return true;
         }
 
-        // 起動時用。ファイルが無い・壊れている場合は既定値(RegistCtrlのElementValue)を入れる
-        public void LoadOrDefault(String FilePath)
+        // 起動時用。ファイルが無い・壊れている場合は既定値(RegisterCtrlのdefaultValue)を入れる
+        public void LoadOrDefault(String filePath)
         {
-            ApplyGenericProfile(JsonFileStorage.Load<GenericProfile>(FilePath));
+            ApplyGenericProfile(JsonFileStorage.Load<GenericProfile>(filePath));
         }
     }
 }

@@ -73,7 +73,7 @@ namespace StandardTemplate.Tests
         {
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "TextBox1", textBox, "既定値");
+            profile.RegisterCtrl("Name", "TextBox1", textBox, "既定値");
 
             textBox.Text = "保存したい値";
             string path = PathFor("text");
@@ -91,8 +91,8 @@ namespace StandardTemplate.Tests
             CheckBox checkBox = Track(new CheckBox());
             RadioButton radio = Track(new RadioButton());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "Check1", checkBox);
-            profile.RegistCtrl("Name", "Radio1", radio);
+            profile.RegisterCtrl("Name", "Check1", checkBox);
+            profile.RegisterCtrl("Name", "Radio1", radio);
 
             checkBox.Checked = true;
             radio.Checked = false;
@@ -112,7 +112,7 @@ namespace StandardTemplate.Tests
         {
             ComboBox combo = Track(new ComboBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "Combo1", combo);
+            profile.RegisterCtrl("Name", "Combo1", combo);
 
             combo.Text = "入力した文字列";
             string path = PathFor("combo");
@@ -129,7 +129,7 @@ namespace StandardTemplate.Tests
         {
             ComboBox combo = Track(new ComboBox());
             var profile = new TestProfile();
-            profile.RegistCtrlList("List", "ComboList1", combo);
+            profile.RegisterCtrlList("List", "ComboList1", combo);
 
             combo.Items.Add("一件目");
             combo.Items.Add("二件目");
@@ -149,7 +149,7 @@ namespace StandardTemplate.Tests
         {
             CheckedListBox listBox = Track(new CheckedListBox());
             var profile = new TestProfile();
-            profile.RegistCtrlList("List", "CheckList1", listBox);
+            profile.RegisterCtrlList("List", "CheckList1", listBox);
 
             listBox.Items.Add("チェックする項目");
             listBox.Items.Add("チェックしない項目");
@@ -173,7 +173,7 @@ namespace StandardTemplate.Tests
         {
             HScrollBar bar = Track(new HScrollBar());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "Scroll1", bar, 10);
+            profile.RegisterCtrl("Name", "Scroll1", bar, 10);
 
             bar.Value = 42;
             string path = PathFor("scroll");
@@ -192,9 +192,9 @@ namespace StandardTemplate.Tests
             CheckBox checkBox = Track(new CheckBox());
             ComboBox combo = Track(new ComboBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "Text", textBox);
-            profile.RegistCtrl("Name", "Check", checkBox);
-            profile.RegistCtrl("Name", "Combo", combo);
+            profile.RegisterCtrl("Name", "Text", textBox);
+            profile.RegisterCtrl("Name", "Check", checkBox);
+            profile.RegisterCtrl("Name", "Combo", combo);
 
             textBox.Text = "文字";
             checkBox.Checked = true;
@@ -219,7 +219,7 @@ namespace StandardTemplate.Tests
             // そのうえでファイルにある項目だけ上書きする。
             TextBox saved = Track(new TextBox());
             var writer = new TestProfile();
-            writer.RegistCtrl("Name", "Saved", saved);
+            writer.RegisterCtrl("Name", "Saved", saved);
             saved.Text = "ファイルに入る値";
             string path = PathFor("default");
             writer.SaveXmlFile(path);
@@ -227,8 +227,8 @@ namespace StandardTemplate.Tests
             // 保存したときには存在しなかったコントロールを足して読み込む
             TextBox notSaved = Track(new TextBox());
             var reader = new TestProfile();
-            reader.RegistCtrl("Name", "Saved", saved);
-            reader.RegistCtrl("Name", "NotSaved", notSaved, "こちらが既定値");
+            reader.RegisterCtrl("Name", "Saved", saved);
+            reader.RegisterCtrl("Name", "NotSaved", notSaved, "こちらが既定値");
 
             saved.Text = "書き換え";
             notSaved.Text = "書き換え";
@@ -243,7 +243,7 @@ namespace StandardTemplate.Tests
         {
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "Text", textBox);
+            profile.RegisterCtrl("Name", "Text", textBox);
 
             string path = PathFor("version");
             profile.SaveXmlFile(path, "3");
@@ -265,7 +265,7 @@ namespace StandardTemplate.Tests
         {
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "Text", textBox, "初期値");
+            profile.RegisterCtrl("Name", "Text", textBox, "初期値");
 
             string path = PathFor("broken");
             File.WriteAllText(path, "<root><Param Name=\"Text\">途中で切れた");
@@ -284,7 +284,7 @@ namespace StandardTemplate.Tests
         {
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "Text", textBox);
+            profile.RegisterCtrl("Name", "Text", textBox);
 
             string path = PathFor("overwrite");
             textBox.Text = "1回目";
@@ -305,7 +305,7 @@ namespace StandardTemplate.Tests
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
             profile.SetElement("MyParam");
-            profile.RegistCtrl("Name", "Text", textBox);
+            profile.RegisterCtrl("Name", "Text", textBox);
 
             textBox.Text = "要素名を変えた";
             string path = PathFor("element");
@@ -324,7 +324,7 @@ namespace StandardTemplate.Tests
         {
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "NewKey", textBox, LegacyAttrValue: "OldKey");
+            profile.RegisterCtrl("Name", "NewKey", textBox, legacyAttrValue: "OldKey");
 
             // 旧キー("OldKey")で保存された設定ファイルを手動で用意する
             string path = PathFor("legacy_xml");
@@ -341,7 +341,7 @@ namespace StandardTemplate.Tests
         {
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "NewKey", textBox, LegacyAttrValue: "OldKey");
+            profile.RegisterCtrl("Name", "NewKey", textBox, legacyAttrValue: "OldKey");
 
             textBox.Text = "新キーで保存したい値";
             string path = PathFor("newkey_xml");
@@ -358,7 +358,7 @@ namespace StandardTemplate.Tests
         {
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "NewKey", textBox, LegacyAttrValue: "OldKey");
+            profile.RegisterCtrl("Name", "NewKey", textBox, legacyAttrValue: "OldKey");
 
             var genericProfile = new GenericProfile();
             genericProfile.Values["Name|OldKey"] = "旧キーのJSON値";
@@ -373,7 +373,7 @@ namespace StandardTemplate.Tests
         {
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "NewKey", textBox, LegacyAttrValue: "OldKey");
+            profile.RegisterCtrl("Name", "NewKey", textBox, legacyAttrValue: "OldKey");
 
             var genericProfile = new GenericProfile();
             genericProfile.Values["Name|NewKey"] = "新キーのJSON値";
@@ -389,7 +389,7 @@ namespace StandardTemplate.Tests
         {
             TextBox textBox = Track(new TextBox());
             var profile = new TestProfile();
-            profile.RegistCtrl("Name", "NewKey", textBox, "既定値");
+            profile.RegisterCtrl("Name", "NewKey", textBox, "既定値");
 
             var genericProfile = new GenericProfile();
             genericProfile.Values["Name|OldKey"] = "無関係な値";

@@ -14,21 +14,21 @@ namespace StandardTemplate.Wpf
 {
     internal static class PathDrop
     {
-        public static void Attach(Control Ctrl, Func<Boolean> FolderPathOnly, Action<String> Apply,
-                                  Func<String, PathDroppedEventArgs> RaiseDropped)
+        public static void Attach(Control ctrl, Func<Boolean> folderPathOnly, Action<String> apply,
+                                  Func<String, PathDroppedEventArgs> raiseDropped)
         {
-            Ctrl.AllowDrop = true;
-            Ctrl.PreviewDragOver += (s, e) =>
+            ctrl.AllowDrop = true;
+            ctrl.PreviewDragOver += (s, e) =>
             {
                 e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
                 e.Handled = true;
             };
-            Ctrl.PreviewDragEnter += (s, e) =>
+            ctrl.PreviewDragEnter += (s, e) =>
             {
                 e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
                 e.Handled = true;
             };
-            Ctrl.PreviewDrop += (s, e) =>
+            ctrl.PreviewDrop += (s, e) =>
             {
                 if (!e.Data.GetDataPresent(DataFormats.FileDrop))
                 {
@@ -42,23 +42,23 @@ namespace StandardTemplate.Wpf
                     return;
                 }
 
-                String path = ResolvePath(paths[0], FolderPathOnly());
-                PathDroppedEventArgs args = RaiseDropped(path);
+                String path = ResolvePath(paths[0], folderPathOnly());
+                PathDroppedEventArgs args = raiseDropped(path);
                 if (args.Cancel)
                 {
                     return;
                 }
-                Apply(path);
+                apply(path);
             };
         }
 
-        public static String ResolvePath(String DroppedPath, Boolean FolderPathOnly)
+        public static String ResolvePath(String droppedPath, Boolean folderPathOnly)
         {
-            if (FolderPathOnly && !Directory.Exists(DroppedPath) && File.Exists(DroppedPath))
+            if (folderPathOnly && !Directory.Exists(droppedPath) && File.Exists(droppedPath))
             {
-                return Path.GetDirectoryName(DroppedPath) ?? DroppedPath;
+                return Path.GetDirectoryName(droppedPath) ?? droppedPath;
             }
-            return DroppedPath;
+            return droppedPath;
         }
     }
 

@@ -14,7 +14,7 @@ namespace StandardTemplate.Tests
     /// 対象にしていないもの:
     ///   - プロセス起動 / ネットワーク / 画面キャプチャ（環境に依存して結果が変わる）
     ///   - WinForms コントロール操作（別途書く）
-    ///   - AssortList など乱数を使うもの（毎回変わるので別テストで性質だけ確認する）
+    ///   - ShuffleArray など乱数を使うもの（毎回変わるので別テストで性質だけ確認する）
     /// </summary>
     [TestClass]
     public class BehaviorSnapshotTests
@@ -244,10 +244,10 @@ namespace StandardTemplate.Tests
 
             r.Section("StcUtils.ChangeNewLineCode(ENCORD_TYPE, String)");
             r.Note("いったん LF に統一してから、SHIFT_JIS のときだけ CRLF に戻す。");
-            foreach (StcFileInputOutput.ENCORD_TYPE t in
-                     (StcFileInputOutput.ENCORD_TYPE[])Enum.GetValues(typeof(StcFileInputOutput.ENCORD_TYPE)))
+            foreach (StcFileInputOutput.ENCODING_TYPE t in
+                     (StcFileInputOutput.ENCODING_TYPE[])Enum.GetValues(typeof(StcFileInputOutput.ENCODING_TYPE)))
             {
-                StcFileInputOutput.ENCORD_TYPE type = t;
+                StcFileInputOutput.ENCODING_TYPE type = t;
                 foreach (string s in new[] { "a\r\nb", "a\nb", "a\rb" })
                 {
                     string src = s;

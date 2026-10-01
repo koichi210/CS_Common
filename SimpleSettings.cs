@@ -29,35 +29,35 @@ namespace StandardTemplate
 
         private readonly Dictionary<String, String> Values = new Dictionary<String, String>();
 
-        public void Set(String Key, String Value)
+        public void Set(String key, String value)
         {
-            Values[Key] = Value;
+            Values[key] = value;
         }
 
         // 設定に無いキーはDefaultValueを返す
-        public String Get(String Key, String DefaultValue = "")
+        public String Get(String key, String defaultValue = "")
         {
             String value;
-            return Values.TryGetValue(Key, out value) ? value : DefaultValue;
+            return Values.TryGetValue(key, out value) ? value : defaultValue;
         }
 
-        public Boolean IsExist(String Key)
+        public Boolean IsExist(String key)
         {
-            return Values.ContainsKey(Key);
+            return Values.ContainsKey(key);
         }
 
         // 設定ファイルを読み込む(JSON優先)。
         // JSONが無く同名のXMLがある場合は、XMLを読んでJSONで保存し直し、元のXMLは削除する。
         // 呼び出し側はJSONのパスだけ渡せばよく、移行のことを意識しなくてよい
-        public static StcSimpleSettings LoadWithMigration(String JsonPath)
+        public static StcSimpleSettings LoadWithMigration(String jsonPath)
         {
-            StcSimpleSettings settings = LoadJson(JsonPath);
+            StcSimpleSettings settings = LoadJson(jsonPath);
             if (settings != null)
             {
                 return settings;
             }
 
-            String xmlPath = Path.ChangeExtension(JsonPath, XmlExtension);
+            String xmlPath = Path.ChangeExtension(jsonPath, XmlExtension);
             settings = Load(xmlPath);
             if (settings == null)
             {
@@ -65,7 +65,7 @@ namespace StandardTemplate
             }
 
             // JSONで保存できたときだけ旧XMLを消す(消してから保存に失敗して設定を失うことがないように)
-            if (settings.SaveJson(JsonPath))
+            if (settings.SaveJson(jsonPath))
             {
                 TryDeleteFile(xmlPath);
             }
@@ -73,9 +73,9 @@ namespace StandardTemplate
         }
 
         // JSONで保存する。呼び出し側が.xmlのパスを渡してきても.jsonへ寄せる
-        public Boolean SaveJson(String FilePath)
+        public Boolean SaveJson(String filePath)
         {
-            String jsonPath = Path.ChangeExtension(FilePath, JsonExtension);
+            String jsonPath = Path.ChangeExtension(filePath, JsonExtension);
             try
             {
                 // FormattingはSystem.Xmlにも同名の型があるため、どちらか明示する
@@ -90,9 +90,9 @@ namespace StandardTemplate
         }
 
         // ファイルが無い・読めない・壊れている場合はnullを返す
-        public static StcSimpleSettings LoadJson(String FilePath)
+        public static StcSimpleSettings LoadJson(String filePath)
         {
-            String jsonPath = Path.ChangeExtension(FilePath, JsonExtension);
+            String jsonPath = Path.ChangeExtension(filePath, JsonExtension);
             if (!File.Exists(jsonPath))
             {
                 return null;
@@ -120,11 +120,11 @@ namespace StandardTemplate
             }
         }
 
-        private static void TryDeleteFile(String FilePath)
+        private static void TryDeleteFile(String filePath)
         {
             try
             {
-                File.Delete(FilePath);
+                File.Delete(filePath);
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
@@ -132,7 +132,7 @@ namespace StandardTemplate
             }
         }
 
-        public Boolean Save(String FilePath)
+        public Boolean Save(String filePath)
         {
             XmlDocument document = new XmlDocument();
             document.AppendChild(document.CreateXmlDeclaration("1.0", "UTF-8", null));
@@ -150,7 +150,7 @@ namespace StandardTemplate
 
             try
             {
-                AtomicFile.Write(FilePath, document.Save);
+                AtomicFile.Write(filePath, document.Save);
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
@@ -160,9 +160,9 @@ namespace StandardTemplate
         }
 
         // ファイルが無い・読めない・壊れている場合はnullを返す(呼び出し側は既定値で動かす)
-        public static StcSimpleSettings Load(String FilePath)
+        public static StcSimpleSettings Load(String filePath)
         {
-            if (!File.Exists(FilePath))
+            if (!File.Exists(filePath))
             {
                 return null;
             }
@@ -170,7 +170,7 @@ namespace StandardTemplate
             XmlDocument document = new XmlDocument();
             try
             {
-                document.Load(FilePath);
+                document.Load(filePath);
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is XmlException)
             {

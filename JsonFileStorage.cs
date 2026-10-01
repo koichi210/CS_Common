@@ -1,6 +1,6 @@
 // Newtonsoft.Json(Json.NET)を使ったシンプルなJSON読み書きユーティリティ。
 //
-// CS_Form配下の各プロジェクトはこれまでXML(StcSaveRestoreのRegistCtrl方式、
+// CS_Form配下の各プロジェクトはこれまでXML(StcSaveRestoreのRegisterCtrl方式、
 // DataGridView等のコントロールに直接値を出し入れする仕組み)で設定値を保存してきたが、
 // 今後はプロジェクトごとに用意したPOCOクラス(例: EventRecorderのProfile.cs)を介して
 // JSONで保存する方式へ段階的に置き換えていく。その足場としてまず_Commonに置く。
