@@ -846,7 +846,7 @@ namespace StandardTemplate
                 if (limitString != String.Empty)
                 {
                     // 大文字小文字を区別せずに部分一致で検索
-                    if (valueName.IndexOf(comboCtrl.Text,StringComparison.OrdinalIgnoreCase) < 0)
+                    if (valueName.IndexOf(limitString, StringComparison.OrdinalIgnoreCase) < 0)
                     {
                         continue;
                     }
@@ -1549,18 +1549,18 @@ namespace StandardTemplate
                         return false;
                     }
 
-                    RegSecureCtrl[i].Ctrl.Text = GetDecodeString(elementValue, RegSecureCtrl[i]);
+                    RegSecureCtrl[i].Ctrl.Text = GetDecodeString(RegSecureCtrl[i]);
                     return true;
                 }
             }
             return false;
         }
 
-        private String GetDecodeString(String elementValue, SecureCtrlDB secureCtrl)
+        private String GetDecodeString(SecureCtrlDB secureCtrl)
         {
             StcSecure secure = new StcSecure();
 
-            return secure.Decode(elementValue,
+            return secure.Decode(
                 secureCtrl.DesKey.ToArray(),
                 secureCtrl.DesIV.ToArray(),
                 secureCtrl.CryptData.ToArray());
@@ -2146,7 +2146,7 @@ namespace StandardTemplate
         }
 
         // 復号(鍵付き)
-        public String Decode(String str, byte[] desKey, byte[] desIV, byte[] cryptData)
+        public String Decode(byte[] desKey, byte[] desIV, byte[] cryptData)
         {
             TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider();
             byte[] destination = TransformBytes(cryptData, des.CreateDecryptor(desKey, desIV));

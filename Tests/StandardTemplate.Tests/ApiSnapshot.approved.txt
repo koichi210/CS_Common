@@ -135,7 +135,7 @@ TYPE internal class StandardTemplate.StcSaveRestore
 
 TYPE public class StandardTemplate.StcSecure
     CTOR   public StcSecure()
-    METHOD public String Decode(String str, Byte[] desKey, Byte[] desIV, Byte[] cryptData)
+    METHOD public String Decode(Byte[] desKey, Byte[] desIV, Byte[] cryptData)
     METHOD public String Encode(String str, out Byte[] desKey, out Byte[] desIV, out Byte[] cryptData)
 
 TYPE public class StandardTemplate.StcUtils
