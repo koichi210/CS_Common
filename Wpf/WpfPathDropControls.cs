@@ -69,6 +69,13 @@ namespace StandardTemplate.Wpf
         // trueの場合、↑/↓キーでテキストの数値を1ずつ増減できる(1未満にはならない)
         public Boolean EnableUpDownIncrement { get; set; } = false;
 
+        // Textが空の間だけ薄く表示する入力例(WinForms版と同名。実体は[[_Common/Wpf/WpfPlaceholder.cs]])
+        public String PlaceholderText
+        {
+            get { return Placeholder.GetText(this); }
+            set { Placeholder.SetText(this, value); }
+        }
+
         public event EventHandler<PathDroppedEventArgs> PathDropped;
 
         public TextBoxEx()
