@@ -22,8 +22,17 @@
 // (EventRecorderのtextBox_Loopと同じ挙動)。値は1未満にはならない
 // (ループ数0以下は意味を持たないユースケースを想定した下限)。既定はOFFなので、
 // 既存のTextBoxEx利用箇所(パス入力欄等)には影響しない。
+//
+// ■プレースホルダー(透かし文字)
+// PlaceholderTextに文字列を入れると、Textが空の間だけ薄い灰色でその文字列を表示する
+// (「どんな値を入れるか」のサンプル表示用)。入力を始めると消え、空に戻ると再び出る。
+// Windows標準のコンキューバナー(EM_SETCUEBANNER)を使っているので、Text自体には何も入らない
+// (Textが空かどうかの判定などに影響しない)。フォーカス中も、空であれば表示したままにする。
+// 注意: Windowsの仕様で、Multiline=trueのTextBoxでは表示されない。
 using System;
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace StandardTemplate
@@ -36,6 +45,42 @@ namespace StandardTemplate
 
         // trueの場合、↑/↓キーでテキストの数値を1ずつ増減できるようにする。既定はfalse
         public Boolean EnableUpDownIncrement { get; set; } = false;
+
+        private const int EM_SETCUEBANNER = 0x1501;
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, String lParam);
+
+        private String placeholderText = String.Empty;
+
+        // Textが空の間だけ薄く表示するサンプル文字列。既定は空(表示しない)
+        [DefaultValue("")]
+        [Category("Appearance")]
+        [Description("Textが空の間だけ薄く表示される、入力例の文字列。")]
+        public String PlaceholderText
+        {
+            get { return placeholderText; }
+            set
+            {
+                placeholderText = value ?? String.Empty;
+                ApplyPlaceholder();
+            }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            ApplyPlaceholder();
+        }
+
+        // wParam=1: フォーカスがある間も、空なら表示し続ける
+        private void ApplyPlaceholder()
+        {
+            if (this.IsHandleCreated)
+            {
+                SendMessage(this.Handle, EM_SETCUEBANNER, new IntPtr(1), placeholderText);
+            }
+        }
 
         // ドロップによってTextへパスが反映された直後に発生する
         public event EventHandler<PathDroppedEventArgs> PathDropped;
