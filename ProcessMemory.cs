@@ -27,48 +27,42 @@ namespace StandardTemplate
             }
         }
 
-        private int CurrentIdx = 0;
-        private List<RestoreStruct> RestoreList = new List<RestoreStruct>();
+        private int _currentIdx = 0;
+        private readonly List<RestoreStruct> _restoreList = new List<RestoreStruct>();
 
         public void IncrementSerialNumber()
         {
-            CurrentIdx++;
+            _currentIdx++;
         }
 
         public Boolean DecrementSerialNumber()
         {
-            if (CurrentIdx == 0)
+            if (_currentIdx == 0)
             {
                 return false;
             }
 
-            CurrentIdx--;
+            _currentIdx--;
             return true;
         }
 
         public void AddRestoreItem(String srcName, String destName)
         {
-            RestoreList.Add(new RestoreStruct(CurrentIdx, srcName, destName));
+            _restoreList.Add(new RestoreStruct(_currentIdx, srcName, destName));
         }
 
         public void PopRestoreItem(ref String srcName, ref String destName)
         {
-            int lastIdx = RestoreList.Count - 1;
+            int lastIdx = _restoreList.Count - 1;
 
-            srcName = RestoreList[lastIdx].SrcName;
-            destName = RestoreList[lastIdx].DestName;
-            RestoreList.RemoveAt(lastIdx);
+            srcName = _restoreList[lastIdx].SrcName;
+            destName = _restoreList[lastIdx].DestName;
+            _restoreList.RemoveAt(lastIdx);
         }
 
         public Boolean HasRestoreItem()
         {
-            if (RestoreList.Count == 0)
-            {
-                return false;
-            }
-
-            int listEndIdx = RestoreList.Count - 1;
-            return RestoreList[listEndIdx].SerialNumber == CurrentIdx;
+            return _restoreList.Count > 0 && _restoreList[_restoreList.Count - 1].SerialNumber == _currentIdx;
         }
     }
 }

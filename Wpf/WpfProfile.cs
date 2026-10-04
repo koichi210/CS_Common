@@ -38,15 +38,18 @@ namespace StandardTemplate.Wpf
                 return null;
             }
 
+            // 重複チェックをList.Contains(毎回線形探索)からHashSetにして、ファイル数が多くても遅くならないようにした
             List<String> names = new List<String>();
+            HashSet<String> seen = new HashSet<String>();
+            int prefixLength = directoryPath.TrimEnd('\\').Length + 1;
             try
             {
                 foreach (String extension in fileExtensions)
                 {
                     foreach (String file in Directory.GetFiles(directoryPath, extension, SearchOption.AllDirectories))
                     {
-                        String name = file.Substring(directoryPath.TrimEnd('\\').Length + 1);
-                        if (name != String.Empty && !names.Contains(name))
+                        String name = file.Substring(prefixLength);
+                        if (name != String.Empty && seen.Add(name))
                         {
                             names.Add(name);
                         }

@@ -106,15 +106,15 @@ namespace StandardTemplate.Tests
         {
             // 以前は "\n" を無条件に "\r\n" へ置換していたため、すでに CRLF の箇所で
             // CR が増えていた。HTML 取得処理から実際に呼ばれており実害があった。
-            Assert.AreEqual("a\r\nb", util.ChangeNewLineCodeLF2CRLF("a\r\nb"), "CRLF に再度かけても増えない");
-            Assert.AreEqual("a\r\nb", util.ChangeNewLineCodeLF2CRLF("a\nb"), "LF は CRLF になる");
+            Assert.AreEqual("a\r\nb", util.ChangeNewLineCodeLf2Crlf("a\r\nb"), "CRLF に再度かけても増えない");
+            Assert.AreEqual("a\r\nb", util.ChangeNewLineCodeLf2Crlf("a\nb"), "LF は CRLF になる");
 
             // 混在していても揃う
-            Assert.AreEqual("a\r\nb\r\nc", util.ChangeNewLineCodeLF2CRLF("a\r\nb\nc"));
+            Assert.AreEqual("a\r\nb\r\nc", util.ChangeNewLineCodeLf2Crlf("a\r\nb\nc"));
 
             // 何度かけても結果が変わらない
-            string once = util.ChangeNewLineCodeLF2CRLF("a\nb\r\nc");
-            Assert.AreEqual(once, util.ChangeNewLineCodeLF2CRLF(once));
+            string once = util.ChangeNewLineCodeLf2Crlf("a\nb\r\nc");
+            Assert.AreEqual(once, util.ChangeNewLineCodeLf2Crlf(once));
         }
     }
 }

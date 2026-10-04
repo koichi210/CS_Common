@@ -31,7 +31,6 @@
 // 注意: Windowsの仕様で、Multiline=trueのTextBoxでは表示されない。
 using System;
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -51,7 +50,7 @@ namespace StandardTemplate
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, String lParam);
 
-        private String placeholderText = String.Empty;
+        private String _placeholderText = String.Empty;
 
         // Textが空の間だけ薄く表示するサンプル文字列。既定は空(表示しない)
         [DefaultValue("")]
@@ -59,10 +58,10 @@ namespace StandardTemplate
         [Description("Textが空の間だけ薄く表示される、入力例の文字列。")]
         public String PlaceholderText
         {
-            get { return placeholderText; }
+            get { return _placeholderText; }
             set
             {
-                placeholderText = value ?? String.Empty;
+                _placeholderText = value ?? String.Empty;
                 ApplyPlaceholder();
             }
         }
@@ -78,7 +77,7 @@ namespace StandardTemplate
         {
             if (this.IsHandleCreated)
             {
-                SendMessage(this.Handle, EM_SETCUEBANNER, new IntPtr(1), placeholderText);
+                SendMessage(this.Handle, EM_SETCUEBANNER, new IntPtr(1), _placeholderText);
             }
         }
 
@@ -137,7 +136,7 @@ namespace StandardTemplate
                 return;
             }
 
-            String path = ResolvePath(paths[0]);
+            String path = PathDropResolver.Resolve(paths[0], FolderPathOnly);
 
             PathDroppedEventArgs args = new PathDroppedEventArgs(path);
             PathDropped?.Invoke(this, args);
@@ -147,28 +146,6 @@ namespace StandardTemplate
             }
 
             this.Text = path;
-        }
-
-        // FolderPathOnly指定に応じて、ドロップされたパスをそのまま使うか
-        // 親フォルダのパスに変換するかを決める
-        private String ResolvePath(String droppedPath)
-        {
-            if (!FolderPathOnly)
-            {
-                return droppedPath;
-            }
-
-            if (Directory.Exists(droppedPath))
-            {
-                return droppedPath;
-            }
-
-            if (File.Exists(droppedPath))
-            {
-                return Path.GetDirectoryName(droppedPath) ?? droppedPath;
-            }
-
-            return droppedPath;
         }
     }
 }

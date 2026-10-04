@@ -42,14 +42,14 @@ namespace StandardTemplate
 
         // システムコマンドのIDは下位4bitをWindowsが予約しているため、16の倍数かつ
         // 0xF000未満にする必要がある(MSDN既定のルール)
-        private const int SysMenuId_ChangeDataFolder = 0x1000;
+        private const int _sysMenuIdChangeDataFolder = 0x1000;
 
         // OnHandleCreated(ウィンドウハンドル生成後)から呼ぶこと
         public static void AppendToSystemMenu(Form targetForm)
         {
             IntPtr systemMenu = GetSystemMenu(targetForm.Handle, false);
             AppendMenu(systemMenu, MF_SEPARATOR, 0, String.Empty);
-            AppendMenu(systemMenu, MF_STRING, SysMenuId_ChangeDataFolder, "データ保存先を変更(&D)...");
+            AppendMenu(systemMenu, MF_STRING, _sysMenuIdChangeDataFolder, "データ保存先を変更(&D)...");
         }
 
         // アプリ独自の項目を足したい場合に使う(IDは16の倍数かつ0xF000未満、0x1000は予約済み)
@@ -60,7 +60,7 @@ namespace StandardTemplate
 
         public static Boolean IsChangeDataFolderCommand(Message m)
         {
-            return IsSysCommand(m, SysMenuId_ChangeDataFolder);
+            return IsSysCommand(m, _sysMenuIdChangeDataFolder);
         }
 
         public static Boolean IsSysCommand(Message m, int sysMenuId)

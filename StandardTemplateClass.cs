@@ -24,14 +24,14 @@ namespace StandardTemplate
         // ようにするだけに留めた(公開APIも挙動も一切変えていない)。
 
         #region 初期化・パス種別判定
-        public enum FILE_PATH_TYPE
+        public enum FilePathType
         {
-            WINDOWS_FULLPATH,
-            PERFORCE_PATH,
-            LINUX_PATH,
-            WINDOWS_PATH,
-            OTHER
-        } ;
+            WindowsFullPath,
+            PerforcePath,
+            LinuxPath,
+            WindowsPath,
+            Other
+        }
 
         // カレントディレクトリ移動
         public void SetCurrentDirectory()
@@ -39,32 +39,25 @@ namespace StandardTemplate
             Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
         }
 
-        public FILE_PATH_TYPE GetFilePathType(String filePath)
+        public FilePathType GetFilePathType(String filePath)
         {
-            FILE_PATH_TYPE pathType = FILE_PATH_TYPE.WINDOWS_PATH;
-
-            if (filePath.IndexOf(":") != -1)
+            if (filePath.IndexOf(':') != -1)
             {
-                pathType = FILE_PATH_TYPE.WINDOWS_FULLPATH;
+                return FilePathType.WindowsFullPath;
             }
-            else if (filePath.StartsWith("//"))
+            if (filePath.StartsWith("//"))
             {
-                pathType = FILE_PATH_TYPE.PERFORCE_PATH;
+                return FilePathType.PerforcePath;
             }
-            else if (filePath.IndexOf("/") != -1)
+            if (filePath.IndexOf('/') != -1)
             {
-                pathType = FILE_PATH_TYPE.LINUX_PATH;
+                return FilePathType.LinuxPath;
             }
-            else if (filePath.IndexOf(@"\") != -1)
+            if (filePath.IndexOf('\\') != -1)
             {
-                pathType = FILE_PATH_TYPE.WINDOWS_PATH;
+                return FilePathType.WindowsPath;
             }
-            else
-            {
-                pathType = FILE_PATH_TYPE.OTHER;
-            }
-
-            return pathType;
+            return FilePathType.Other;
         }
 
         #endregion
@@ -94,12 +87,10 @@ namespace StandardTemplate
         // プロセス実行&完了待ち
         public void ExecutePathWithWait(String path, String arguments = "", Boolean noWindow = false)
         {
-            Process hProcess = ExecuteProcess(path, arguments, noWindow);
-            hProcess.WaitForExit(); // 処理が終わるまで待つ
-
-            //hProcess.CloseMainWindow();
-            hProcess.Close();
-            hProcess.Dispose();
+            using (Process process = ExecuteProcess(path, arguments, noWindow))
+            {
+                process.WaitForExit(); // 処理が終わるまで待つ
+            }
         }
 
         // プロセス実行&標準出力取得
@@ -263,6 +254,10 @@ namespace StandardTemplate
         #endregion
 
         #region 数値・文字列・パス変換
+        // GetNumber内で呼ばれるたびにRegexを生成し直していたため、1つを使い回す
+        // (DataGridViewのセル読込など、ループ内から何度も呼ばれる)
+        private static readonly Regex _nonDigitRegex = new Regex(@"[^0-9]");
+
         // 数値or文字列操作 -----------------------------------
         public int GetInteger(String text)
         {
@@ -313,8 +308,7 @@ namespace StandardTemplate
             }
 
             String srcNumStr = srcString.Substring(startIdx, length);
-            Regex re = new Regex(@"[^0-9]");
-            String destNumStr = re.Replace(srcNumStr, "");
+            String destNumStr = _nonDigitRegex.Replace(srcNumStr, "");
 
             if (destNumStr == String.Empty)
             {
@@ -427,42 +421,32 @@ namespace StandardTemplate
         }
 
         // 改行コードを変換[LF→CRLF]
-        public String ChangeNewLineCodeLF2CRLF(String source)
+        public String ChangeNewLineCodeLf2Crlf(String source)
         {
             // 単純に "\n" を "\r\n" に置換すると、すでに CRLF になっている箇所が
             // "\r\r\n" に増えてしまう。いったん LF に統一してから変換することで、
             // LF と CRLF が混在していても、何度呼んでも結果が変わらないようにする。
-            String dest = source.Replace("\r\n", "\n").Replace("\n", "\r\n");
-            return dest;
+            return ChangeNewLineCodeCrlf2Lf(source).Replace("\n", "\r\n");
         }
 
         // 改行コードを変換[CRLF→LF]
-        public String ChangeNewLineCodeCRLF2LF(String source)
+        public String ChangeNewLineCodeCrlf2Lf(String source)
         {
-            String dest = source.Replace("\r\n", "\n");
-            return dest;
+            return source.Replace("\r\n", "\n");
         }
 
-        // 改行コードを自動変換
-        public String ChangeNewLineCode(StcFileInputOutput.ENCODING_TYPE encodingType, String source)
+        // 改行コードを自動変換(Shift_JISならCRLF、それ以外はLF)
+        public String ChangeNewLineCode(StcFileInputOutput.EncodingType encodingType, String source)
         {
-            // 改行コードを変換 "CR+LF" →"LF"
-            String dest = ChangeNewLineCodeCRLF2LF(source);
-
-            if (encodingType == StcFileInputOutput.ENCODING_TYPE.SHIFT_JIS)
-            {
-                // 改行コードを変換 "LF" →"CR+LF"
-                dest = ChangeNewLineCodeLF2CRLF(dest);
-            }
-
-            return dest;
+            return (encodingType == StcFileInputOutput.EncodingType.ShiftJis)
+                ? ChangeNewLineCodeLf2Crlf(source)
+                : ChangeNewLineCodeCrlf2Lf(source);
         }
 
         // ダブルクォートをエスケープ[" → \"]
         public String ChangeDoubleQuote2BackSlashDoubleQuote(String source)
         {
-            String dest = source.Replace(@"""", @"\""");
-            return dest;
+            return source.Replace(@"""", @"\""");
         }
 
         // Linuxパス名を連結
@@ -523,14 +507,10 @@ namespace StandardTemplate
         // 画像サイズ取得
         public Size GetPictSize(String imgFileName)
         {
-            Bitmap img = new Bitmap(imgFileName);
-
-            Size sz = new Size();
-            sz.Width = img.Width;
-            sz.Height = img.Height;
-
-            img.Dispose();
-            return sz;
+            using (Bitmap img = new Bitmap(imgFileName))
+            {
+                return img.Size;
+            }
         }
 
         #endregion
@@ -563,12 +543,7 @@ namespace StandardTemplate
 
         public String ChangeStrArray2Linear(String[] strArray, String separator)
         {
-            String strLinear = "";
-            if ( strArray != null )
-            {
-	            strLinear = String.Join(separator, strArray);
-	        }
-	        return strLinear;
+            return (strArray != null) ? String.Join(separator, strArray) : "";
         }
 
         public String[] ChangeStrLinear2Array(String strLinear, String delimiter, StringSplitOptions opt = StringSplitOptions.RemoveEmptyEntries)
@@ -960,13 +935,8 @@ namespace StandardTemplate
 
         public String GetDataGridCell(DataGridView dgv, int rowIdx, int columnIdx)
         {
-            String cellData = "";
-            if (dgv.Rows[rowIdx].Cells[columnIdx].Value != null)
-            {
-                cellData = dgv.Rows[rowIdx].Cells[columnIdx].Value.ToString();
-            }
-
-            return cellData;
+            Object value = dgv.Rows[rowIdx].Cells[columnIdx].Value;
+            return (value != null) ? value.ToString() : "";
         }
 
         public void SetDragFile(DragEventArgs e)
@@ -999,7 +969,7 @@ namespace StandardTemplate
     // プロファイルの保存＆読み込み
     class StcSaveRestore
     {
-        class OriginDB
+        class OriginDb
         {
             public String AttrName { get; set; }
             public String AttrValue { get; set; }
@@ -1056,56 +1026,46 @@ namespace StandardTemplate
                     return false;
                 }
 
-                if (isFullCompare)
-                {
-                    if (!attribute.Equals(attrValue))
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    if (attribute.IndexOf(attrValue) == -1)
-                    {
-                        return false;
-                    }
-                }
-                return true;
+                return isFullCompare
+                    ? attribute.Equals(attrValue)
+                    : attribute.IndexOf(attrValue) != -1;
             }
         }
 
-        class TextCtrlDB : OriginDB
+        class TextCtrlDb : OriginDb
         {
             public TextBox Ctrl { get; set; }
         }
 
-        class RadioButtonCtrlDB : OriginDB
+        class RadioButtonCtrlDb : OriginDb
         {
             public RadioButton Ctrl { get; set; }
         }
 
-        class CheckBoxDB : OriginDB
+        class CheckBoxDb : OriginDb
         {
             public CheckBox Ctrl { get; set; }
         }
 
-        class ComboBoxDB : OriginDB
+        class ComboBoxDb : OriginDb
         {
             public ComboBox Ctrl { get; set; }
         }
 
-        class CheckedListBoxDB : OriginDB
+        class CheckedListBoxDb : OriginDb
         {
             public CheckedListBox Ctrl { get; set; }
         }
 
-        class HScrollBarDB : OriginDB
+        class HScrollBarDb : OriginDb
         {
             public HScrollBar Ctrl { get; set; }
         }
 
-        class DataGridViewDB : OriginDB
+        class DataGridViewDb : OriginDb
         {
+            private static readonly StcUtils _util = new StcUtils();
+
             public DataGridView Ctrl { get; set; }
             public String AttrCountValue { get; set; }
 
@@ -1125,126 +1085,125 @@ namespace StandardTemplate
             /// <param name="rowIdx"></param>
             /// <param name="columnIdx"></param>
             /// <param name="attribute"></param>
-            private void GetDataGridCellIdx(out int rowIdx, out int columnIdx, String attribute)
+            private static void GetDataGridCellIdx(out int rowIdx, out int columnIdx, String attribute)
             {
-                StcUtils util = new StcUtils();
-
+                // 以前はセル1つ読むたびにStcUtilsをnewしていた。状態を持たないので1つを使い回す
                 int rowStartIdx = attribute.IndexOf("_") + 1;
                 int rowEndIdx = attribute.IndexOf("-");
                 int columnStartIdx = rowEndIdx + 1;
 
-                rowIdx = (int)util.GetNumber(attribute, rowStartIdx, rowEndIdx - rowStartIdx, "0");
+                rowIdx = (int)_util.GetNumber(attribute, rowStartIdx, rowEndIdx - rowStartIdx, "0");
 
-                columnIdx = (int)util.GetNumber(attribute, columnStartIdx, attribute.Length - rowEndIdx - 1, "0");
+                columnIdx = (int)_util.GetNumber(attribute, columnStartIdx, attribute.Length - rowEndIdx - 1, "0");
             }
         }
 
-        class SecureCtrlDB : TextCtrlDB
+        class SecureCtrlDb : TextCtrlDb
         {
             public List<byte> DesKey { get; set; }
-            public List<byte> DesIV { get; set; }
+            public List<byte> DesIv { get; set; }
             public List<byte> CryptData { get; set; }
 
             public String SecureAttrName { get; set; }
             public String SecureAttrValueDesKey { get; set; }
-            public String SecureAttrValueDesIV { get; set; }
+            public String SecureAttrValueDesIv { get; set; }
             public String SecureAttrValueCryptData { get; set; }
         }
 
         // private
-        private readonly String VersionAttrName = "File";
-        private readonly String VersionKeyName = "Version";
+        private const String _versionAttrName = "File";
+        private const String _versionKeyName = "Version";
 
-        private readonly String DefaultSecureAttrName = "ManageInfo";
-        private readonly String DefaultSecureAttrValueDesKey = "Key1_";
-        private readonly String DefaultSecureAttrValueDesIV = "Key2_";
-        private readonly String DefaultSecureAttrValueCryptData = "Key3_";
+        private const String _defaultSecureAttrName = "ManageInfo";
+        private const String _defaultSecureAttrValueDesKey = "Key1_";
+        private const String _defaultSecureAttrValueDesIv = "Key2_";
+        private const String _defaultSecureAttrValueCryptData = "Key3_";
 
-        private readonly String VersionElementName = "Param";
-        private String ElementName = "Param";
+        private const String _versionElementName = "Param";
+        private String _elementName = "Param";
 
-        private TextCtrlDB[] RegTextCtrl = { };
-        private RadioButtonCtrlDB[] RegRadioCtrl = { };
-        private CheckBoxDB[] RegCheckCtrl = { };
-        private ComboBoxDB[] RegComboCtrl = { };
-        private DataGridViewDB[] RegDataGridCtrl = { };
-        private HScrollBarDB[] RegHScrollBarCtrl = { };
-        private ComboBoxDB[] RegComboCtrlList = { };
-        private CheckedListBoxDB[] RegCheckedListBox = { };
-        private SecureCtrlDB[] RegSecureCtrl = { };
+        private readonly List<TextCtrlDb> _regTextCtrl = new List<TextCtrlDb>();
+        private readonly List<RadioButtonCtrlDb> _regRadioCtrl = new List<RadioButtonCtrlDb>();
+        private readonly List<CheckBoxDb> _regCheckCtrl = new List<CheckBoxDb>();
+        private readonly List<ComboBoxDb> _regComboCtrl = new List<ComboBoxDb>();
+        private readonly List<DataGridViewDb> _regDataGridCtrl = new List<DataGridViewDb>();
+        private readonly List<HScrollBarDb> _regHScrollBarCtrl = new List<HScrollBarDb>();
+        private readonly List<ComboBoxDb> _regComboCtrlList = new List<ComboBoxDb>();
+        private readonly List<CheckedListBoxDb> _regCheckedListBox = new List<CheckedListBoxDb>();
+        private readonly List<SecureCtrlDb> _regSecureCtrl = new List<SecureCtrlDb>();
 
-        private XmlDocument m_WriteDocument = null;
-        private XmlElement m_WriteRoot = null;
+        private XmlDocument _writeDocument = null;
+        private XmlElement _writeRoot = null;
 
-        private StcUtils util = new StcUtils();
+        private readonly StcUtils _util = new StcUtils();
 
         // Element変更
         public void SetElement(String element)
         {
-            ElementName = element;
+            _elementName = element;
         }
 
         // コントロール登録
-        private static void AddRegistered<TDB>(ref TDB[] registeredCtrl, TDB item, String attrName, String attrValue, String defaultValue, String legacyAttrValue = null) where TDB : OriginDB
+        // 以前は配列をArray.Resizeで1つずつ伸ばしていた(登録のたびに全要素コピー)ため、Listにした
+        private static void AddRegistered<TDb>(List<TDb> registeredCtrl, TDb item, String attrName, String attrValue, String defaultValue, String legacyAttrValue = null) where TDb : OriginDb
         {
             item.SetParams(attrName, attrValue, defaultValue, legacyAttrValue);
-            Array.Resize(ref registeredCtrl, registeredCtrl.Length + 1);
-            registeredCtrl[registeredCtrl.Length - 1] = item;
+            registeredCtrl.Add(item);
         }
 
         public void RegisterCtrl(String attrName, String attrValue, TextBox ctrl, String defaultValue = "", String legacyAttrValue = null)
         {
-            AddRegistered(ref RegTextCtrl, new TextCtrlDB { Ctrl = ctrl }, attrName, attrValue, defaultValue, legacyAttrValue);
+            AddRegistered(_regTextCtrl, new TextCtrlDb { Ctrl = ctrl }, attrName, attrValue, defaultValue, legacyAttrValue);
         }
 
         public void RegisterCtrl(String attrName, String attrValue, RadioButton ctrl, String defaultValue = "")
         {
-            AddRegistered(ref RegRadioCtrl, new RadioButtonCtrlDB { Ctrl = ctrl }, attrName, attrValue, defaultValue);
+            AddRegistered(_regRadioCtrl, new RadioButtonCtrlDb { Ctrl = ctrl }, attrName, attrValue, defaultValue);
         }
 
         public void RegisterCtrl(String attrName, String attrValue, CheckBox ctrl, String defaultValue = "", String legacyAttrValue = null)
         {
-            AddRegistered(ref RegCheckCtrl, new CheckBoxDB { Ctrl = ctrl }, attrName, attrValue, defaultValue, legacyAttrValue);
+            AddRegistered(_regCheckCtrl, new CheckBoxDb { Ctrl = ctrl }, attrName, attrValue, defaultValue, legacyAttrValue);
         }
 
         public void RegisterCtrl(String attrName, String attrValue, ComboBox ctrl, String defaultValue = "")
         {
-            AddRegistered(ref RegComboCtrl, new ComboBoxDB { Ctrl = ctrl }, attrName, attrValue, defaultValue);
+            AddRegistered(_regComboCtrl, new ComboBoxDb { Ctrl = ctrl }, attrName, attrValue, defaultValue);
         }
 
         public void RegisterCtrl(String attrName, String attrValue, String attrCountValue, DataGridView ctrl, String defaultValue = "")
         {
             ctrl.RowCount = 1;
-            AddRegistered(ref RegDataGridCtrl, new DataGridViewDB { Ctrl = ctrl, AttrCountValue = attrCountValue }, attrName, attrValue, defaultValue);
+            AddRegistered(_regDataGridCtrl, new DataGridViewDb { Ctrl = ctrl, AttrCountValue = attrCountValue }, attrName, attrValue, defaultValue);
         }
 
         public void RegisterCtrl(String attrName, String attrValue, HScrollBar ctrl, int defaultValue = 0)
         {
-            AddRegistered(ref RegHScrollBarCtrl, new HScrollBarDB { Ctrl = ctrl }, attrName, attrValue, defaultValue.ToString());
+            AddRegistered(_regHScrollBarCtrl, new HScrollBarDb { Ctrl = ctrl }, attrName, attrValue, defaultValue.ToString());
         }
 
         public void RegisterCtrlList(String attrName, String attrValue, ComboBox ctrl, String defaultValue = "")
         {
-            AddRegistered(ref RegComboCtrlList, new ComboBoxDB { Ctrl = ctrl }, attrName, attrValue, defaultValue);
+            AddRegistered(_regComboCtrlList, new ComboBoxDb { Ctrl = ctrl }, attrName, attrValue, defaultValue);
         }
 
         public void RegisterCtrlList(String attrName, String attrValue, CheckedListBox ctrl, String defaultValue = "")
         {
-            AddRegistered(ref RegCheckedListBox, new CheckedListBoxDB { Ctrl = ctrl }, attrName, attrValue, defaultValue);
+            AddRegistered(_regCheckedListBox, new CheckedListBoxDb { Ctrl = ctrl }, attrName, attrValue, defaultValue);
         }
 
         public void RegisterSecureCtrl(String attrName, String attrValue, TextBox ctrl, String defaultValue = "")
         {
-            AddRegistered(ref RegSecureCtrl, new SecureCtrlDB
+            AddRegistered(_regSecureCtrl, new SecureCtrlDb
             {
                 Ctrl = ctrl,
                 DesKey = new List<byte>(),
-                DesIV = new List<byte>(),
+                DesIv = new List<byte>(),
                 CryptData = new List<byte>(),
-                SecureAttrName = DefaultSecureAttrName,
-                SecureAttrValueDesKey = DefaultSecureAttrValueDesKey,
-                SecureAttrValueDesIV = DefaultSecureAttrValueDesIV,
-                SecureAttrValueCryptData = DefaultSecureAttrValueCryptData,
+                SecureAttrName = _defaultSecureAttrName,
+                SecureAttrValueDesKey = _defaultSecureAttrValueDesKey,
+                SecureAttrValueDesIv = _defaultSecureAttrValueDesIv,
+                SecureAttrValueCryptData = _defaultSecureAttrValueCryptData,
             }, attrName, attrValue, defaultValue);
         }
 
@@ -1252,48 +1211,48 @@ namespace StandardTemplate
         private void ResetCtrlsToDefault()
         {
             // [TextCtrl]
-            for (int i = 0; i < RegTextCtrl.Length; i++)
+            for (int i = 0; i < _regTextCtrl.Count; i++)
             {
-                RegTextCtrl[i].Ctrl.Text = RegTextCtrl[i].DefaultValue;
+                _regTextCtrl[i].Ctrl.Text = _regTextCtrl[i].DefaultValue;
             }
 
             // [RadioButton]
-            for (int i = 0; i < RegRadioCtrl.Length; i++)
+            for (int i = 0; i < _regRadioCtrl.Count; i++)
             {
-                RegRadioCtrl[i].Ctrl.Checked = util.GetBoolean(RegRadioCtrl[i].DefaultValue);
+                _regRadioCtrl[i].Ctrl.Checked = _util.GetBoolean(_regRadioCtrl[i].DefaultValue);
             }
 
             // [CheckBox]
-            for (int i = 0; i < RegCheckCtrl.Length; i++)
+            for (int i = 0; i < _regCheckCtrl.Count; i++)
             {
-                RegCheckCtrl[i].Ctrl.Checked = util.GetBoolean(RegCheckCtrl[i].DefaultValue);
+                _regCheckCtrl[i].Ctrl.Checked = _util.GetBoolean(_regCheckCtrl[i].DefaultValue);
             }
 
             // [ComboBox]
-            for (int i = 0; i < RegComboCtrl.Length; i++)
+            for (int i = 0; i < _regComboCtrl.Count; i++)
             {
-                RegComboCtrl[i].Ctrl.Text = RegComboCtrl[i].DefaultValue;
+                _regComboCtrl[i].Ctrl.Text = _regComboCtrl[i].DefaultValue;
             }
 
             // [ComboBox]リスト
-            for (int i = 0; i < RegComboCtrlList.Length; i++)
+            for (int i = 0; i < _regComboCtrlList.Count; i++)
             {
-                RegComboCtrlList[i].Ctrl.Items.Clear();
+                _regComboCtrlList[i].Ctrl.Items.Clear();
             }
 
             // [CheckedListBoxList]
-            for (int i = 0; i < RegCheckedListBox.Length; i++)
+            for (int i = 0; i < _regCheckedListBox.Count; i++)
             {
-                RegCheckedListBox[i].Ctrl.Items.Clear();
+                _regCheckedListBox[i].Ctrl.Items.Clear();
             }
 
             // [SecureCtrl]
-            for (int i = 0; i < RegSecureCtrl.Length; i++)
+            for (int i = 0; i < _regSecureCtrl.Count; i++)
             {
-                RegSecureCtrl[i].DesKey.Clear();
-                RegSecureCtrl[i].DesIV.Clear();
-                RegSecureCtrl[i].CryptData.Clear();
-                RegSecureCtrl[i].Ctrl.Text = RegSecureCtrl[i].DefaultValue;
+                _regSecureCtrl[i].DesKey.Clear();
+                _regSecureCtrl[i].DesIv.Clear();
+                _regSecureCtrl[i].CryptData.Clear();
+                _regSecureCtrl[i].Ctrl.Text = _regSecureCtrl[i].DefaultValue;
             }
         }
 
@@ -1435,13 +1394,13 @@ namespace StandardTemplate
         /// 種類ごとに同じ形の for ループが並んでいたのを 1 つにまとめたもの。
         /// 種類による違いは「どう照合するか(IsMatch)」と「何を代入するか(Apply)」だけ。
         /// </summary>
-        private Boolean LoadRegisteredCtrl<T>(T[] registeredCtrl, Func<T, Boolean> isMatch, Action<T> apply) where T : OriginDB
+        private static Boolean LoadRegisteredCtrl<T>(List<T> registeredCtrl, Func<T, Boolean> isMatch, Action<T> apply) where T : OriginDb
         {
-            for (int i = 0; i < registeredCtrl.Length; i++)
+            foreach (T ctrl in registeredCtrl)
             {
-                if (isMatch(registeredCtrl[i]))
+                if (isMatch(ctrl))
                 {
-                    apply(registeredCtrl[i]);
+                    apply(ctrl);
                     return true;
                 }
             }
@@ -1451,7 +1410,7 @@ namespace StandardTemplate
         // 設定ファイル読み込み[TextBox]
         private Boolean LoadTextCtrl(XmlElement element, String elementValue)
         {
-            return LoadRegisteredCtrl(RegTextCtrl,
+            return LoadRegisteredCtrl(_regTextCtrl,
                 ctrl => ctrl.IsExistFullMatch(element),
                 ctrl => ctrl.Ctrl.Text = elementValue);
         }
@@ -1459,23 +1418,23 @@ namespace StandardTemplate
         // 設定ファイル読み込み[RadioButton]
         private Boolean LoadRadioCtrl(XmlElement element, String elementValue)
         {
-            return LoadRegisteredCtrl(RegRadioCtrl,
+            return LoadRegisteredCtrl(_regRadioCtrl,
                 ctrl => ctrl.IsExistFullMatch(element),
-                ctrl => ctrl.Ctrl.Checked = util.GetBoolean(elementValue));
+                ctrl => ctrl.Ctrl.Checked = _util.GetBoolean(elementValue));
         }
 
         // 設定ファイル読み込み[CheckBox]
         private Boolean LoadCheckCtrl(XmlElement element, String elementValue)
         {
-            return LoadRegisteredCtrl(RegCheckCtrl,
+            return LoadRegisteredCtrl(_regCheckCtrl,
                 ctrl => ctrl.IsExistFullMatch(element),
-                ctrl => ctrl.Ctrl.Checked = util.GetBoolean(elementValue));
+                ctrl => ctrl.Ctrl.Checked = _util.GetBoolean(elementValue));
         }
 
         // 設定ファイル読み込み[ComboBox]
         private Boolean LoadComboCtrl(XmlElement element, String elementValue)
         {
-            return LoadRegisteredCtrl(RegComboCtrl,
+            return LoadRegisteredCtrl(_regComboCtrl,
                 ctrl => ctrl.IsExistFullMatch(element),
                 ctrl => ctrl.Ctrl.Text = elementValue);
         }
@@ -1483,7 +1442,7 @@ namespace StandardTemplate
         // 設定ファイル読み込み[ComboBoxの履歴一覧]
         private Boolean LoadComboCtrlList(XmlElement element, String elementValue)
         {
-            return LoadRegisteredCtrl(RegComboCtrlList,
+            return LoadRegisteredCtrl(_regComboCtrlList,
                 ctrl => ctrl.IsExistPartMatch(element),
                 ctrl => ctrl.Ctrl.Items.Add(elementValue));
         }
@@ -1492,7 +1451,7 @@ namespace StandardTemplate
         private Boolean LoadCheckedListBoxCtrl(XmlElement element, String elementValue)
         {
             // 属性値は "<AttrValue>-<項目名>" の形で入っているので、前半で照合して後半を項目名として使う
-            return LoadRegisteredCtrl(RegCheckedListBox,
+            return LoadRegisteredCtrl(_regCheckedListBox,
                 ctrl => ctrl.IsExistPartMatch(element, ctrl.AttrName, ctrl.AttrValue + "-"),
                 ctrl =>
                 {
@@ -1503,7 +1462,7 @@ namespace StandardTemplate
                     ctrl.Ctrl.Items.Add(attribute.Substring(itemNameIdx));
 
                     // 状態
-                    Boolean isChecked = util.GetBoolean(elementValue, "Checked");
+                    Boolean isChecked = _util.GetBoolean(elementValue, "Checked");
                     ctrl.Ctrl.SetItemChecked(ctrl.Ctrl.Items.Count - 1, isChecked);
                 });
         }
@@ -1512,17 +1471,17 @@ namespace StandardTemplate
         private Boolean LoadDataGridCtrl(XmlElement element, String elementValue)
         {
             // ここだけは照合が 2 通り（セルの値と行数）あるので、まとめずに残してある
-            for (int i = 0; i < RegDataGridCtrl.Length; i++)
+            foreach (DataGridViewDb grid in _regDataGridCtrl)
             {
-                if (RegDataGridCtrl[i].IsExistPartMatch(element))
+                if (grid.IsExistPartMatch(element))
                 {
-                    String attribute = element.GetAttribute(RegDataGridCtrl[i].AttrName);
-                    RegDataGridCtrl[i].LoadData(attribute, elementValue);
+                    grid.LoadData(element.GetAttribute(grid.AttrName), elementValue);
                     return true;
                 }
-                else if (RegDataGridCtrl[i].IsExistPartMatch(element, RegDataGridCtrl[i].AttrName, RegDataGridCtrl[i].AttrCountValue))
+
+                if (grid.IsExistPartMatch(element, grid.AttrName, grid.AttrCountValue))
                 {
-                    RegDataGridCtrl[i].Ctrl.RowCount = util.GetInteger(elementValue);
+                    grid.Ctrl.RowCount = _util.GetInteger(elementValue);
                     return true;
                 }
             }
@@ -1532,7 +1491,7 @@ namespace StandardTemplate
         // 設定ファイル読み込み[HScrollBar]
         private Boolean LoadHScrollBarCtrl(XmlElement element, String elementValue)
         {
-            return LoadRegisteredCtrl(RegHScrollBarCtrl,
+            return LoadRegisteredCtrl(_regHScrollBarCtrl,
                 ctrl => ctrl.IsExistFullMatch(element),
                 ctrl => ctrl.Ctrl.Value = int.Parse(elementValue));
         }
@@ -1540,56 +1499,41 @@ namespace StandardTemplate
         // 設定ファイル読み込み[SecureCtrl]
         private Boolean LoadSecureCtrl(XmlElement element, String elementValue)
         {
-            for (int i = 0; i < RegSecureCtrl.Length; i++)
+            foreach (SecureCtrlDb secureCtrl in _regSecureCtrl)
             {
-                if (RegSecureCtrl[i].IsExistFullMatch(element))
+                if (secureCtrl.IsExistFullMatch(element))
                 {
-                    if (!IsExistSecureCode(RegSecureCtrl[i]))
+                    if (!IsExistSecureCode(secureCtrl))
                     {
                         return false;
                     }
 
-                    RegSecureCtrl[i].Ctrl.Text = GetDecodeString(RegSecureCtrl[i]);
+                    secureCtrl.Ctrl.Text = GetDecodeString(secureCtrl);
                     return true;
                 }
             }
             return false;
         }
 
-        private String GetDecodeString(SecureCtrlDB secureCtrl)
+        private static String GetDecodeString(SecureCtrlDb secureCtrl)
         {
             StcSecure secure = new StcSecure();
 
             return secure.Decode(
                 secureCtrl.DesKey.ToArray(),
-                secureCtrl.DesIV.ToArray(),
+                secureCtrl.DesIv.ToArray(),
                 secureCtrl.CryptData.ToArray());
         }
 
-        private Boolean IsExistSecureCode(SecureCtrlDB secure)
+        private static Boolean IsExistSecureCode(SecureCtrlDb secure)
         {
-            if (secure.DesKey.Count <= 0)
-            {
-                return false;
-            }
-
-            if (secure.DesIV.Count <= 0)
-            {
-                return false;
-            }
-
-            if (secure.CryptData.Count <= 0)
-            {
-                return false;
-            }
-
-            return true;
+            return secure.DesKey.Count > 0 && secure.DesIv.Count > 0 && secure.CryptData.Count > 0;
         }
 
         private Boolean UseSecureCtrl()
         {
             // 管理情報がなければ読まない
-            return RegSecureCtrl.Length != 0;
+            return _regSecureCtrl.Count != 0;
         }
 
         private void LoadSecureCode(XmlDocument document)
@@ -1597,24 +1541,19 @@ namespace StandardTemplate
             foreach (XmlElement element in document.DocumentElement)
             {
                 String elementValue = element.InnerText;
-                for (int i = 0; i < RegSecureCtrl.Length; i++)
+                foreach (SecureCtrlDb secureCtrl in _regSecureCtrl)
                 {
-                    if (RegSecureCtrl[i].IsExistPartMatch(element, RegSecureCtrl[i].SecureAttrName, DefaultSecureAttrValueDesKey))
+                    if (secureCtrl.IsExistPartMatch(element, secureCtrl.SecureAttrName, _defaultSecureAttrValueDesKey))
                     {
-                        RegSecureCtrl[i].DesKey.Add(Convert.ToByte(elementValue));
-                        continue;
+                        secureCtrl.DesKey.Add(Convert.ToByte(elementValue));
                     }
-
-                    if (RegSecureCtrl[i].IsExistPartMatch(element, RegSecureCtrl[i].SecureAttrName, DefaultSecureAttrValueDesIV))
+                    else if (secureCtrl.IsExistPartMatch(element, secureCtrl.SecureAttrName, _defaultSecureAttrValueDesIv))
                     {
-                        RegSecureCtrl[i].DesIV.Add(Convert.ToByte(elementValue));
-                        continue;
+                        secureCtrl.DesIv.Add(Convert.ToByte(elementValue));
                     }
-
-                    if (RegSecureCtrl[i].IsExistPartMatch(element, RegSecureCtrl[i].SecureAttrName, DefaultSecureAttrValueCryptData))
+                    else if (secureCtrl.IsExistPartMatch(element, secureCtrl.SecureAttrName, _defaultSecureAttrValueCryptData))
                     {
-                        RegSecureCtrl[i].CryptData.Add(Convert.ToByte(elementValue));
-                        continue;
+                        secureCtrl.CryptData.Add(Convert.ToByte(elementValue));
                     }
                 }
             }
@@ -1655,7 +1594,7 @@ namespace StandardTemplate
         public int LoadXmlVersion(XmlDocument document)
         {
             int versionNo = 0;
-            foreach (XmlElement element in FindElements(document, VersionAttrName, VersionKeyName, true))
+            foreach (XmlElement element in FindElements(document, _versionAttrName, _versionKeyName, true))
             {
                 int.TryParse(element.InnerText, out versionNo);
                 break;
@@ -1676,7 +1615,7 @@ namespace StandardTemplate
         {
             try
             {
-                AtomicFile.Write(fileName, m_WriteDocument.Save);
+                AtomicFile.Write(fileName, _writeDocument.Save);
             }
             catch (Exception)
             {
@@ -1705,7 +1644,7 @@ namespace StandardTemplate
         /// <param name="versionNo"></param>
         public void SaveXmlFile(XmlDocument document, String versionNo = "1")
         {
-            m_WriteDocument = document;
+            _writeDocument = document;
 
             SetRoot();
             SaveXmlVersion(versionNo);
@@ -1724,39 +1663,36 @@ namespace StandardTemplate
         // 設定ファイルの保存[ルート]
         private void SetRoot()
         {
-            XmlDeclaration declaration = m_WriteDocument.CreateXmlDeclaration("1.0", null, null);  // XML宣言
-            m_WriteRoot = m_WriteDocument.CreateElement("root");  // ルート要素
+            XmlDeclaration declaration = _writeDocument.CreateXmlDeclaration("1.0", null, null);  // XML宣言
+            _writeRoot = _writeDocument.CreateElement("root");  // ルート要素
 
-            m_WriteDocument.AppendChild(declaration);
-            m_WriteDocument.AppendChild(m_WriteRoot);
+            _writeDocument.AppendChild(declaration);
+            _writeDocument.AppendChild(_writeRoot);
         }
 
         // 設定ファイルの保存[バージョン]
         private void SaveXmlVersion(String version)
         {
-            SaveXmlString(VersionElementName, VersionAttrName, VersionKeyName, version);
+            SaveXmlString(_versionElementName, _versionAttrName, _versionKeyName, version);
         }
 
         // パラメータ保存 /////////////////////////////////////////
         // ファイル保存[String]
         public void SaveXmlString(String elementName, String attrName, String attrValue, String text)
         {
-            XmlElement element = m_WriteDocument.CreateElement(elementName);
-            element.SetAttribute(attrName, attrValue);
-            element.InnerText = text;
-            m_WriteRoot.AppendChild(element);
+            SaveXmlString(_writeDocument, _writeRoot, elementName, attrName, attrValue, text);
         }
 
         // ファイル保存[String]
         public void SaveXmlString(String attrName, String attrValue, String text)
         {
-            SaveXmlString(ElementName, attrName, attrValue, text);
+            SaveXmlString(_elementName, attrName, attrValue, text);
         }
 
         // ファイル保存[StringArray]
         public void SaveXmlParamAll(String attrName, String attrValue, String[] strArray)
         {
-            if(strArray == null)
+            if (strArray == null)
             {
                 return;
             }
@@ -1806,48 +1742,48 @@ namespace StandardTemplate
         /// DataGridView）は内側にもループがあって形が違うので、ここには通していない。
         /// 無理に共通化すると渡すデリゲートが増えてかえって読みにくくなるため。
         /// </summary>
-        private void SaveRegisteredCtrl<T>(T[] registeredCtrl, Func<T, String> getValue) where T : OriginDB
+        private void SaveRegisteredCtrl<T>(List<T> registeredCtrl, Func<T, String> getValue) where T : OriginDb
         {
-            for (int i = 0; i < registeredCtrl.Length; i++)
+            foreach (T ctrl in registeredCtrl)
             {
-                SaveXmlString(registeredCtrl[i].AttrName, registeredCtrl[i].AttrValue, getValue(registeredCtrl[i]));
+                SaveXmlString(ctrl.AttrName, ctrl.AttrValue, getValue(ctrl));
             }
         }
 
         // ファイル保存[TextBox]
         private void SaveTextCtrl()
         {
-            SaveRegisteredCtrl(RegTextCtrl, ctrl => ctrl.Ctrl.Text);
+            SaveRegisteredCtrl(_regTextCtrl, ctrl => ctrl.Ctrl.Text);
         }
 
         // ファイル保存[RadioButton]
         private void SaveRadioCtrl()
         {
-            SaveRegisteredCtrl(RegRadioCtrl, ctrl => ctrl.Ctrl.Checked.ToString());
+            SaveRegisteredCtrl(_regRadioCtrl, ctrl => ctrl.Ctrl.Checked.ToString());
         }
 
         // ファイル保存[CheckBox]
         private void SaveCheckCtrl()
         {
-            SaveRegisteredCtrl(RegCheckCtrl, ctrl => ctrl.Ctrl.Checked.ToString());
+            SaveRegisteredCtrl(_regCheckCtrl, ctrl => ctrl.Ctrl.Checked.ToString());
         }
 
         // ファイル保存[ComboBox]
         private void SaveComboCtrl()
         {
-            SaveRegisteredCtrl(RegComboCtrl, ctrl => ctrl.Ctrl.Text);
+            SaveRegisteredCtrl(_regComboCtrl, ctrl => ctrl.Ctrl.Text);
         }
 
         // ファイル保存[ComboBox]の中身
         private void SaveComboCtrlList()
         {
-            for (int i = 0; i < RegComboCtrlList.Length; i++)
+            for (int i = 0; i < _regComboCtrlList.Count; i++)
             {
-                for (int j = 0; j < RegComboCtrlList[i].Ctrl.Items.Count; j++)
+                for (int j = 0; j < _regComboCtrlList[i].Ctrl.Items.Count; j++)
                 {
-                    SaveXmlString(RegComboCtrlList[i].AttrName,
-                        RegComboCtrlList[i].AttrValue + j.ToString(),
-                        RegComboCtrlList[i].Ctrl.Items[j].ToString());
+                    SaveXmlString(_regComboCtrlList[i].AttrName,
+                        _regComboCtrlList[i].AttrValue + j.ToString(),
+                        _regComboCtrlList[i].Ctrl.Items[j].ToString());
                 }
             }
         }
@@ -1855,14 +1791,14 @@ namespace StandardTemplate
         // ファイル保存[CheckListBox]
         private void SaveCheckedListBox()
         {
-            for (int i = 0; i < RegCheckedListBox.Length; i++)
+            for (int i = 0; i < _regCheckedListBox.Count; i++)
             {
-                for (int j = 0; j < RegCheckedListBox[i].Ctrl.Items.Count; j++)
+                for (int j = 0; j < _regCheckedListBox[i].Ctrl.Items.Count; j++)
                 {
                     // 状態
-                    SaveXmlString(RegCheckedListBox[i].AttrName,
-                        RegCheckedListBox[i].AttrValue + "-" + RegCheckedListBox[i].Ctrl.Items[j].ToString(),
-                        RegCheckedListBox[i].Ctrl.GetItemCheckState(j).ToString());
+                    SaveXmlString(_regCheckedListBox[i].AttrName,
+                        _regCheckedListBox[i].AttrValue + "-" + _regCheckedListBox[i].Ctrl.Items[j].ToString(),
+                        _regCheckedListBox[i].Ctrl.GetItemCheckState(j).ToString());
                 }
             }
         }
@@ -1870,17 +1806,17 @@ namespace StandardTemplate
         // ファイル保存[dataGrid]
         private void SaveDataGridCtrl()
         {
-            for (int i = 0; i < RegDataGridCtrl.Length; i++)
+            for (int i = 0; i < _regDataGridCtrl.Count; i++)
             {
-                SaveXmlParam(RegDataGridCtrl[i].AttrName, RegDataGridCtrl[i].AttrCountValue, RegDataGridCtrl[i].Ctrl.RowCount);
-                for (int rowIdx = 0; rowIdx < RegDataGridCtrl[i].Ctrl.RowCount; rowIdx++)
+                SaveXmlParam(_regDataGridCtrl[i].AttrName, _regDataGridCtrl[i].AttrCountValue, _regDataGridCtrl[i].Ctrl.RowCount);
+                for (int rowIdx = 0; rowIdx < _regDataGridCtrl[i].Ctrl.RowCount; rowIdx++)
                 {
-                    for (int columnIdx = 0; columnIdx < RegDataGridCtrl[i].Ctrl.ColumnCount; columnIdx++)
+                    for (int columnIdx = 0; columnIdx < _regDataGridCtrl[i].Ctrl.ColumnCount; columnIdx++)
                     {
-                        String cellValue = util.GetDataGridCell(RegDataGridCtrl[i].Ctrl, rowIdx, columnIdx);
+                        String cellValue = _util.GetDataGridCell(_regDataGridCtrl[i].Ctrl, rowIdx, columnIdx);
 
-                        SaveXmlString(RegDataGridCtrl[i].AttrName,
-                            RegDataGridCtrl[i].AttrValue + "_" + rowIdx.ToString() + "-" + columnIdx.ToString(),
+                        SaveXmlString(_regDataGridCtrl[i].AttrName,
+                            _regDataGridCtrl[i].AttrValue + "_" + rowIdx.ToString() + "-" + columnIdx.ToString(),
                             cellValue);
                     }
                 }
@@ -1890,7 +1826,7 @@ namespace StandardTemplate
         // ファイル保存[HScrollBar]
         private void SaveHScrollBarCtrl()
         {
-            SaveRegisteredCtrl(RegHScrollBarCtrl, ctrl => ctrl.Ctrl.Value.ToString());
+            SaveRegisteredCtrl(_regHScrollBarCtrl, ctrl => ctrl.Ctrl.Value.ToString());
         }
 
         // ファイル保存[暗号化キー]
@@ -1899,17 +1835,17 @@ namespace StandardTemplate
             StcSecure secure = new StcSecure();
 
             byte[] desKey;
-            byte[] desIV;
+            byte[] desIv;
             byte[] cryptData;
             String secureWord;
-            for (int i = 0; i < RegSecureCtrl.Length; i++)
+            for (int i = 0; i < _regSecureCtrl.Count; i++)
             {
-                secureWord = secure.Encode(RegSecureCtrl[i].Ctrl.Text, out desKey, out desIV, out cryptData);
-                SaveXmlString(RegSecureCtrl[i].AttrName, RegSecureCtrl[i].AttrValue, secureWord);
+                secureWord = secure.Encode(_regSecureCtrl[i].Ctrl.Text, out desKey, out desIv, out cryptData);
+                SaveXmlString(_regSecureCtrl[i].AttrName, _regSecureCtrl[i].AttrValue, secureWord);
 
-                SaveXmlManageParam(DefaultSecureAttrName, DefaultSecureAttrValueDesKey, desKey);
-                SaveXmlManageParam(DefaultSecureAttrName, DefaultSecureAttrValueDesIV, desIV);
-                SaveXmlManageParam(DefaultSecureAttrName, DefaultSecureAttrValueCryptData, cryptData);
+                SaveXmlManageParam(_defaultSecureAttrName, _defaultSecureAttrValueDesKey, desKey);
+                SaveXmlManageParam(_defaultSecureAttrName, _defaultSecureAttrValueDesIv, desIv);
+                SaveXmlManageParam(_defaultSecureAttrName, _defaultSecureAttrValueCryptData, cryptData);
             }
         }
 
@@ -1931,46 +1867,46 @@ namespace StandardTemplate
         {
             GenericProfile profile = new GenericProfile();
 
-            for (int i = 0; i < RegTextCtrl.Length; i++) { profile.Values[GenericKey(RegTextCtrl[i])] = RegTextCtrl[i].Ctrl.Text; }
-            for (int i = 0; i < RegRadioCtrl.Length; i++) { profile.Values[GenericKey(RegRadioCtrl[i])] = RegRadioCtrl[i].Ctrl.Checked.ToString(); }
-            for (int i = 0; i < RegCheckCtrl.Length; i++) { profile.Values[GenericKey(RegCheckCtrl[i])] = RegCheckCtrl[i].Ctrl.Checked.ToString(); }
-            for (int i = 0; i < RegComboCtrl.Length; i++) { profile.Values[GenericKey(RegComboCtrl[i])] = RegComboCtrl[i].Ctrl.Text; }
-            for (int i = 0; i < RegHScrollBarCtrl.Length; i++) { profile.Values[GenericKey(RegHScrollBarCtrl[i])] = RegHScrollBarCtrl[i].Ctrl.Value.ToString(); }
+            for (int i = 0; i < _regTextCtrl.Count; i++) { profile.Values[GenericKey(_regTextCtrl[i])] = _regTextCtrl[i].Ctrl.Text; }
+            for (int i = 0; i < _regRadioCtrl.Count; i++) { profile.Values[GenericKey(_regRadioCtrl[i])] = _regRadioCtrl[i].Ctrl.Checked.ToString(); }
+            for (int i = 0; i < _regCheckCtrl.Count; i++) { profile.Values[GenericKey(_regCheckCtrl[i])] = _regCheckCtrl[i].Ctrl.Checked.ToString(); }
+            for (int i = 0; i < _regComboCtrl.Count; i++) { profile.Values[GenericKey(_regComboCtrl[i])] = _regComboCtrl[i].Ctrl.Text; }
+            for (int i = 0; i < _regHScrollBarCtrl.Count; i++) { profile.Values[GenericKey(_regHScrollBarCtrl[i])] = _regHScrollBarCtrl[i].Ctrl.Value.ToString(); }
 
-            for (int i = 0; i < RegComboCtrlList.Length; i++)
+            for (int i = 0; i < _regComboCtrlList.Count; i++)
             {
                 List<String> items = new List<String>();
-                foreach (Object item in RegComboCtrlList[i].Ctrl.Items) { items.Add(item.ToString()); }
-                profile.Lists[GenericKey(RegComboCtrlList[i])] = items;
+                foreach (Object item in _regComboCtrlList[i].Ctrl.Items) { items.Add(item.ToString()); }
+                profile.Lists[GenericKey(_regComboCtrlList[i])] = items;
             }
 
-            for (int i = 0; i < RegCheckedListBox.Length; i++)
+            for (int i = 0; i < _regCheckedListBox.Count; i++)
             {
                 List<String> items = new List<String>();
                 Dictionary<String, Boolean> checkedStates = new Dictionary<String, Boolean>();
-                for (int j = 0; j < RegCheckedListBox[i].Ctrl.Items.Count; j++)
+                for (int j = 0; j < _regCheckedListBox[i].Ctrl.Items.Count; j++)
                 {
-                    String itemName = RegCheckedListBox[i].Ctrl.Items[j].ToString();
+                    String itemName = _regCheckedListBox[i].Ctrl.Items[j].ToString();
                     items.Add(itemName);
-                    checkedStates[itemName] = RegCheckedListBox[i].Ctrl.GetItemChecked(j);
+                    checkedStates[itemName] = _regCheckedListBox[i].Ctrl.GetItemChecked(j);
                 }
-                profile.Lists[GenericKey(RegCheckedListBox[i])] = items;
-                profile.CheckedStates[GenericKey(RegCheckedListBox[i])] = checkedStates;
+                profile.Lists[GenericKey(_regCheckedListBox[i])] = items;
+                profile.CheckedStates[GenericKey(_regCheckedListBox[i])] = checkedStates;
             }
 
-            for (int i = 0; i < RegDataGridCtrl.Length; i++)
+            for (int i = 0; i < _regDataGridCtrl.Count; i++)
             {
                 List<List<String>> rows = new List<List<String>>();
-                for (int r = 0; r < RegDataGridCtrl[i].Ctrl.RowCount; r++)
+                for (int r = 0; r < _regDataGridCtrl[i].Ctrl.RowCount; r++)
                 {
                     List<String> row = new List<String>();
-                    for (int c = 0; c < RegDataGridCtrl[i].Ctrl.ColumnCount; c++)
+                    for (int c = 0; c < _regDataGridCtrl[i].Ctrl.ColumnCount; c++)
                     {
-                        row.Add(util.GetDataGridCell(RegDataGridCtrl[i].Ctrl, r, c));
+                        row.Add(_util.GetDataGridCell(_regDataGridCtrl[i].Ctrl, r, c));
                     }
                     rows.Add(row);
                 }
-                profile.Grids[GenericKey(RegDataGridCtrl[i])] = rows;
+                profile.Grids[GenericKey(_regDataGridCtrl[i])] = rows;
             }
 
             // SecureCtrl(暗号化して保存するパスワード等)は現状どのプロジェクトも未使用のため、
@@ -1990,56 +1926,56 @@ namespace StandardTemplate
             }
 
             String value;
-            for (int i = 0; i < RegTextCtrl.Length; i++) { if (TryGetGenericValue(profile, RegTextCtrl[i], out value)) { RegTextCtrl[i].Ctrl.Text = value; } }
-            for (int i = 0; i < RegRadioCtrl.Length; i++) { if (TryGetGenericValue(profile, RegRadioCtrl[i], out value)) { RegRadioCtrl[i].Ctrl.Checked = util.GetBoolean(value); } }
-            for (int i = 0; i < RegCheckCtrl.Length; i++) { if (TryGetGenericValue(profile, RegCheckCtrl[i], out value)) { RegCheckCtrl[i].Ctrl.Checked = util.GetBoolean(value); } }
-            for (int i = 0; i < RegComboCtrl.Length; i++) { if (TryGetGenericValue(profile, RegComboCtrl[i], out value)) { RegComboCtrl[i].Ctrl.Text = value; } }
-            for (int i = 0; i < RegHScrollBarCtrl.Length; i++) { if (TryGetGenericValue(profile, RegHScrollBarCtrl[i], out value)) { RegHScrollBarCtrl[i].Ctrl.Value = util.GetInteger(value); } }
+            for (int i = 0; i < _regTextCtrl.Count; i++) { if (TryGetGenericValue(profile, _regTextCtrl[i], out value)) { _regTextCtrl[i].Ctrl.Text = value; } }
+            for (int i = 0; i < _regRadioCtrl.Count; i++) { if (TryGetGenericValue(profile, _regRadioCtrl[i], out value)) { _regRadioCtrl[i].Ctrl.Checked = _util.GetBoolean(value); } }
+            for (int i = 0; i < _regCheckCtrl.Count; i++) { if (TryGetGenericValue(profile, _regCheckCtrl[i], out value)) { _regCheckCtrl[i].Ctrl.Checked = _util.GetBoolean(value); } }
+            for (int i = 0; i < _regComboCtrl.Count; i++) { if (TryGetGenericValue(profile, _regComboCtrl[i], out value)) { _regComboCtrl[i].Ctrl.Text = value; } }
+            for (int i = 0; i < _regHScrollBarCtrl.Count; i++) { if (TryGetGenericValue(profile, _regHScrollBarCtrl[i], out value)) { _regHScrollBarCtrl[i].Ctrl.Value = _util.GetInteger(value); } }
 
-            for (int i = 0; i < RegComboCtrlList.Length; i++)
+            for (int i = 0; i < _regComboCtrlList.Count; i++)
             {
-                RegComboCtrlList[i].Ctrl.Items.Clear();
+                _regComboCtrlList[i].Ctrl.Items.Clear();
                 List<String> items;
-                if (profile.Lists.TryGetValue(GenericKey(RegComboCtrlList[i]), out items))
+                if (profile.Lists.TryGetValue(GenericKey(_regComboCtrlList[i]), out items))
                 {
-                    foreach (String item in items) { RegComboCtrlList[i].Ctrl.Items.Add(item); }
+                    foreach (String item in items) { _regComboCtrlList[i].Ctrl.Items.Add(item); }
                 }
             }
 
-            for (int i = 0; i < RegCheckedListBox.Length; i++)
+            for (int i = 0; i < _regCheckedListBox.Count; i++)
             {
-                RegCheckedListBox[i].Ctrl.Items.Clear();
+                _regCheckedListBox[i].Ctrl.Items.Clear();
                 List<String> items;
-                if (profile.Lists.TryGetValue(GenericKey(RegCheckedListBox[i]), out items))
+                if (profile.Lists.TryGetValue(GenericKey(_regCheckedListBox[i]), out items))
                 {
                     Dictionary<String, Boolean> checkedStates;
-                    profile.CheckedStates.TryGetValue(GenericKey(RegCheckedListBox[i]), out checkedStates);
+                    profile.CheckedStates.TryGetValue(GenericKey(_regCheckedListBox[i]), out checkedStates);
 
                     foreach (String item in items)
                     {
-                        int idx = RegCheckedListBox[i].Ctrl.Items.Add(item);
+                        int idx = _regCheckedListBox[i].Ctrl.Items.Add(item);
                         Boolean isChecked;
                         if (checkedStates == null || !checkedStates.TryGetValue(item, out isChecked))
                         {
                             isChecked = false;
                         }
-                        RegCheckedListBox[i].Ctrl.SetItemChecked(idx, isChecked);
+                        _regCheckedListBox[i].Ctrl.SetItemChecked(idx, isChecked);
                     }
                 }
             }
 
-            for (int i = 0; i < RegDataGridCtrl.Length; i++)
+            for (int i = 0; i < _regDataGridCtrl.Count; i++)
             {
-                RegDataGridCtrl[i].Ctrl.RowCount = 1;
+                _regDataGridCtrl[i].Ctrl.RowCount = 1;
                 List<List<String>> rows;
-                if (profile.Grids.TryGetValue(GenericKey(RegDataGridCtrl[i]), out rows) && rows.Count > 0)
+                if (profile.Grids.TryGetValue(GenericKey(_regDataGridCtrl[i]), out rows) && rows.Count > 0)
                 {
-                    RegDataGridCtrl[i].Ctrl.RowCount = rows.Count;
+                    _regDataGridCtrl[i].Ctrl.RowCount = rows.Count;
                     for (int r = 0; r < rows.Count; r++)
                     {
-                        for (int c = 0; c < rows[r].Count && c < RegDataGridCtrl[i].Ctrl.ColumnCount; c++)
+                        for (int c = 0; c < rows[r].Count && c < _regDataGridCtrl[i].Ctrl.ColumnCount; c++)
                         {
-                            RegDataGridCtrl[i].Ctrl.Rows[r].Cells[c].Value = rows[r][c];
+                            _regDataGridCtrl[i].Ctrl.Rows[r].Cells[c].Value = rows[r][c];
                         }
                     }
                 }
@@ -2047,14 +1983,14 @@ namespace StandardTemplate
         }
 
         // GenericProfileのキー(コントロール名由来なので、旧XMLの「Cell_行-列」方式より読める)
-        private static String GenericKey(OriginDB ctrl)
+        private static String GenericKey(OriginDb ctrl)
         {
-            return ctrl.AttrName + "|" + ctrl.AttrValue;
+            return GenericProfile.MakeKey(ctrl.AttrName, ctrl.AttrValue);
         }
 
         // GenericKeyで見つからなければ、LegacyAttrValue(旧キー)でも探す。
         // typo修正等でAttrValueを変えたコントロールでも、旧キーで保存されたJSONを読めるようにするため
-        private static Boolean TryGetGenericValue(GenericProfile profile, OriginDB ctrl, out String value)
+        private static Boolean TryGetGenericValue(GenericProfile profile, OriginDb ctrl, out String value)
         {
             if (profile.Values.TryGetValue(GenericKey(ctrl), out value))
             {
@@ -2063,7 +1999,7 @@ namespace StandardTemplate
 
             if (ctrl.LegacyAttrValue != null)
             {
-                return profile.Values.TryGetValue(ctrl.AttrName + "|" + ctrl.LegacyAttrValue, out value);
+                return profile.Values.TryGetValue(GenericProfile.MakeKey(ctrl.AttrName, ctrl.LegacyAttrValue), out value);
             }
 
             value = null;
@@ -2088,13 +2024,20 @@ namespace StandardTemplate
 
         // DataGridViewの行データ(行×列の文字列)。キーは"AttrName|AttrValue"
         public Dictionary<String, List<List<String>>> Grids { get; set; } = new Dictionary<String, List<List<String>>>();
+
+        // 保存キー"AttrName|AttrValue"を作る。WinForms版(StcSaveRestore)とWPF版(WpfSaveRestore)で
+        // 同じキーにしないと互いのプロファイルを読めなくなるため、組み立て方をここ1か所にまとめた
+        public static String MakeKey(String attrName, String attrValue)
+        {
+            return attrName + "|" + attrValue;
+        }
     }
 
     // *******************************************************************************
     // Form1コンストラクタの定型処理(アイコン設定/カレントディレクトリ移動)をまとめた
     // 共通基底クラス。各プロジェクトのForm1は
     //   partial class Form1 : StcBaseForm<SaveRestore>
-    // のように継承し、util/srフィールドはこちら側の物をそのまま使う。
+    // のように継承し、_util/_srフィールドはこちら側の物をそのまま使う。
     //
     // TSaveRestoreは各プロジェクト固有の"class SaveRestore : StcSaveRestore"を渡す想定。
     //
@@ -2108,13 +2051,13 @@ namespace StandardTemplate
     abstract class StcBaseForm<TSaveRestore> : Form
         where TSaveRestore : StcSaveRestore, new()
     {
-        protected StcUtils util = new StcUtils();
-        protected TSaveRestore sr = new TSaveRestore();
+        protected StcUtils _util = new StcUtils();
+        protected TSaveRestore _sr = new TSaveRestore();
 
         protected void InitializeCommonSettings(Icon formIcon)
         {
             this.Icon = formIcon;
-            util.SetCurrentDirectory();
+            _util.SetCurrentDirectory();
         }
     }
 
@@ -2130,44 +2073,46 @@ namespace StandardTemplate
         // 残さないため、未使用だった固定鍵版は削除した(パフォーマンス改善#8で対応)。
 
         // 暗号化(鍵付き)。鍵とIVは呼び出しごとに新しく生成したものを返す
-        public String Encode(String str, out byte[] desKey, out byte[] desIV, out byte[] cryptData)
+        public String Encode(String str, out byte[] desKey, out byte[] desIv, out byte[] cryptData)
         {
             // 以前は鍵生成用と暗号化用でTripleDESCryptoServiceProviderを2つ作っていたが、
             // CreateEncryptorには鍵とIVを明示的に渡しているので1つで足りる
-            TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider();
-            desKey = des.Key;
-            desIV = des.IV;
+            using (TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider())
+            {
+                desKey = des.Key;
+                desIv = des.IV;
 
-            byte[] source = Encoding.Unicode.GetBytes(str);
-
-            cryptData = TransformBytes(source, des.CreateEncryptor(desKey, desIV));
+                byte[] source = Encoding.Unicode.GetBytes(str);
+                cryptData = TransformBytes(source, des.CreateEncryptor(desKey, desIv));
+            }
 
             return Encoding.Unicode.GetString(cryptData);
         }
 
         // 復号(鍵付き)
-        public String Decode(byte[] desKey, byte[] desIV, byte[] cryptData)
+        public String Decode(byte[] desKey, byte[] desIv, byte[] cryptData)
         {
-            TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider();
-            byte[] destination = TransformBytes(cryptData, des.CreateDecryptor(desKey, desIV));
-
-            return Encoding.Unicode.GetString(destination);
+            using (TripleDESCryptoServiceProvider des = new TripleDESCryptoServiceProvider())
+            {
+                byte[] destination = TransformBytes(cryptData, des.CreateDecryptor(desKey, desIv));
+                return Encoding.Unicode.GetString(destination);
+            }
         }
 
         // MemoryStream+CryptoStreamでの変換処理は暗号化/復号どちらの経路でも同じ形をしていたので、
         // ICryptoTransform(Encryptor/Decryptor)を渡すだけの共通処理としてまとめた。
         private static byte[] TransformBytes(byte[] source, ICryptoTransform transform)
         {
-            MemoryStream ms = new MemoryStream();
-            CryptoStream cs = new CryptoStream(ms, transform, CryptoStreamMode.Write);
-
-            cs.Write(source, 0, source.Length);
-            cs.Close();
-
-            byte[] result = ms.ToArray();
-            ms.Close();
-
-            return result;
+            using (transform)
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (CryptoStream cs = new CryptoStream(ms, transform, CryptoStreamMode.Write))
+                {
+                    cs.Write(source, 0, source.Length);
+                }
+                // CryptoStreamを閉じた(=最終ブロックを書き出した)後でも、MemoryStream.ToArrayは使える
+                return ms.ToArray();
+            }
         }
     }
 
@@ -2175,13 +2120,13 @@ namespace StandardTemplate
     // FileIO
     public partial class StcFileInputOutput
     {
-        public enum ENCODING_TYPE
+        public enum EncodingType
         {
-            SHIFT_JIS,
-            EUC_JP,
-        };
+            ShiftJis,
+            EucJp,
+        }
 
-        StcUtils utils = new StcUtils();
+        private readonly StcUtils _utils = new StcUtils();
 
         // テンポラリファイル作成
         public String CreateTempFile(String ext = "")
@@ -2202,11 +2147,11 @@ namespace StandardTemplate
         // ファイル作成
         public void CreateFile(String fileName, String data, Boolean debugMode = false)
         {
-            CreateFile(fileName, data, StcFileInputOutput.ENCODING_TYPE.SHIFT_JIS, debugMode);
+            CreateFile(fileName, data, EncodingType.ShiftJis, debugMode);
         }
 
         // ファイル作成
-        public void CreateFile(String fileName, String data, ENCODING_TYPE encodingType, Boolean debugMode = false)
+        public void CreateFile(String fileName, String data, EncodingType encodingType, Boolean debugMode = false)
         {
             // デバッグモードのときは、バッチの画面を閉じない
             if (debugMode)
@@ -2215,7 +2160,7 @@ namespace StandardTemplate
             }
 
             // 改行コードを変換
-            data = utils.ChangeNewLineCode(encodingType, data);
+            data = _utils.ChangeNewLineCode(encodingType, data);
             using (StreamWriter sw = new StreamWriter(fileName, false, GetEncoding(encodingType)))
             {
                 sw.Write(data);
@@ -2225,16 +2170,16 @@ namespace StandardTemplate
         // 文字コード変換[UTF8→Sjis]
         // .NET文字列は内部的に常にUTF-16なので、変換は「読み込み時のエンコード指定」と
         // 「書き込み時のエンコード指定(SaveFileがShift_JIS固定)」だけで完了する
-        public Boolean ChangeStringCodeUTF2SJIS(String inFileName, String outFileName)
+        public Boolean ChangeStringCodeUtf2Sjis(String inFileName, String outFileName)
         {
             SaveFile(outFileName, LoadFileWithEncoding(inFileName, Encoding.GetEncoding("utf-8")));
             return true;
         }
 
         // 文字コード変換[Euc→Sjis]
-        public Boolean ChangeStringCodeEUC2SJIS(String inFileName, String outFileName)
+        public Boolean ChangeStringCodeEuc2Sjis(String inFileName, String outFileName)
         {
-            if (!utils.IsExistPath(inFileName))
+            if (!_utils.IsExistPath(inFileName))
             {
                 // ファイルが存在しない
                 return false;
@@ -2327,20 +2272,9 @@ namespace StandardTemplate
         // 保存できるファイルパスか
         public Boolean IsSaveValidFilePath(String filePathName)
         {
-            FileInfo cFileInfo = new FileInfo(filePathName);
-            if (!cFileInfo.Exists)
-            {
-                // ファイルが存在していなければ、保存可
-                return true;
-            }
-
-            if ((cFileInfo.Attributes & FileAttributes.ReadOnly) != FileAttributes.ReadOnly)
-            {
-                // 読取専用属性がなければ、保存可
-                return true;
-            }
-
-            return false;
+            // ファイルが存在していない、または読取専用属性がなければ保存可
+            FileInfo fileInfo = new FileInfo(filePathName);
+            return !fileInfo.Exists || (fileInfo.Attributes & FileAttributes.ReadOnly) != FileAttributes.ReadOnly;
         }
 
         // 読み取り属性解除
@@ -2349,7 +2283,7 @@ namespace StandardTemplate
         // 経由でStcUtilsに依存する側なので、そちらへ委譲する形にして依存の向きを揃えた。
         public Boolean RemoveReadonlyAttribute(String fileName)
         {
-            return utils.RemoveReadonlyAttribute(fileName);
+            return _utils.RemoveReadonlyAttribute(fileName);
         }
 
         // 読み取り属性解除
@@ -2449,20 +2383,17 @@ namespace StandardTemplate
         // ファイル削除（読み取り属性解除）
         public Boolean DeleteFileWithRemoveReadonlyAttribute(String deleteFile)
         {
-            Boolean deleteComplete = true;
-
             RemoveReadonlyAttribute(new FileInfo(deleteFile));
 
             try
             {
                 File.Delete(deleteFile);
+                return true;
             }
             catch (Exception)
             {
-                deleteComplete = false;
+                return false;
             }
-
-            return deleteComplete;
         }
 
         // ディレクトリを移動
@@ -2494,19 +2425,15 @@ namespace StandardTemplate
         {
             Directory.CreateDirectory(targetPath);
 
-            String[] files = Directory.GetFileSystemEntries(sourcePath);
-
-            for (int i = 0; i < files.Length; i++)
+            // ファイルだけが対象なので、GetFileSystemEntries+File.Existsで絞り込むのをやめてGetFilesで直接取る
+            foreach (String file in Directory.GetFiles(sourcePath))
             {
-                if (File.Exists(files[i]))
+                String destName = targetPath + @"\" + GetLastPathName(file);
+                if (!FileMove(file, destName))
                 {
-                    String destName = targetPath + @"\" + GetLastPathName(files[i]);
-                    if ( ! FileMove(files[i], destName) )
-                    {
-                        MessageBox.Show("Move処理に失敗しました。" + Environment.NewLine +
-                            "[" + files[i] + "]" + Environment.NewLine +
-                            "[" + destName + "]" + Environment.NewLine);
-                    }
+                    MessageBox.Show("Move処理に失敗しました。" + Environment.NewLine +
+                        "[" + file + "]" + Environment.NewLine +
+                        "[" + destName + "]" + Environment.NewLine);
                 }
             }
         }
@@ -2514,16 +2441,15 @@ namespace StandardTemplate
         // ファイル移動[移動できないことを考慮]
         public Boolean FileMove(String sourcePath, String targetPath)
         {
-            Boolean isSuccess = true;
             try
             {
                 File.Move(sourcePath, targetPath);
+                return true;
             }
             catch
             {
-                isSuccess = false;
+                return false;
             }
-            return isSuccess;
         }
 
         // ファイルフルパスの中から先頭のパスを取得
@@ -2544,41 +2470,36 @@ namespace StandardTemplate
         // 作成しなかった場合だけfalseを返す
         public Boolean EnsureDirectory(String path, Boolean isAutoCreate = false)
         {
-            Boolean isExist = true;
-            if (!Directory.Exists(path))
+            if (Directory.Exists(path))
             {
-                Boolean isCreate = true;
-                if (!isAutoCreate)
-                {
-                    String msg = String.Format("ディレクトリは存在しません。作成しますか？\n{0}", path);
+                return true;
+            }
 
-                    DialogResult result = MessageBox.Show(msg,
-                        "Warning",
-                        MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Exclamation,
-                        MessageBoxDefaultButton.Button1);
+            if (!isAutoCreate)
+            {
+                String msg = String.Format("ディレクトリは存在しません。作成しますか？\n{0}", path);
 
-                    // 「いいえ」を選んでも作成してしまっていた(IsCreateがtrueのまま)
-                    isCreate = (result == DialogResult.Yes);
-                }
+                DialogResult result = MessageBox.Show(msg,
+                    "Warning",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Exclamation,
+                    MessageBoxDefaultButton.Button1);
 
-                if (isCreate)
+                // 以前は「いいえ」を選んでも作成してしまっていた
+                if (result != DialogResult.Yes)
                 {
-                    Directory.CreateDirectory(path);
-                }
-                else
-                {
-                    isExist = false;
+                    return false;
                 }
             }
 
-            return isExist;
+            Directory.CreateDirectory(path);
+            return true;
         }
 
         // データをセーブする
         public void SaveFile(String filePath, String data, Boolean isAppend = false)
         {
-            using (StreamWriter sw = new StreamWriter(filePath, isAppend, System.Text.Encoding.GetEncoding("Shift_JIS")))
+            using (StreamWriter sw = new StreamWriter(filePath, isAppend, Encoding.GetEncoding("Shift_JIS")))
             {
                 sw.Write(data);
             }
@@ -2606,22 +2527,14 @@ namespace StandardTemplate
 
         public Boolean DetectFileData(String filePath, String detectWord)
         {
-            Boolean isFound = false;
-            String data = LoadFile(filePath);
-
-            if (data.IndexOf(detectWord) != -1)
-            {
-                isFound = true;
-            }
-
-            return isFound;
+            return LoadFile(filePath).IndexOf(detectWord) != -1;
         }
 
-        private Encoding GetEncoding(ENCODING_TYPE encodingType)
+        private Encoding GetEncoding(EncodingType encodingType)
         {
             // 未知の種別は空文字のままEncoding.GetEncoding("")に渡されて例外になっていたので、既定をShift_JISにする
             String encodingName = "shift_jis";
-            if (encodingType == ENCODING_TYPE.EUC_JP)
+            if (encodingType == EncodingType.EucJp)
             {
                 encodingName = "euc-jp";
             }
@@ -2694,20 +2607,21 @@ namespace StandardTemplate
         ///////////////////////////////////////////////////////////////////////////////////////////////
 
 
-        public enum CAPTURE_TARGET
+        // 型名に"Type"が付いているのは、同名のプロパティ(CaptureTarget/MouseEvent)と衝突させないため
+        public enum CaptureTargetType
         {
-            FULL_SCREEN,
-            CURRENT_SCREEN,
-            CURRENT_WINDOW,
-        };
+            FullScreen,
+            CurrentScreen,
+            CurrentWindow,
+        }
 
-        public enum MOUSE_EVENT
+        public enum MouseEventType
         {
-            MOVE,
-            LEFT_CLICK,
-            LEFT_DOWN,
-            LEFT_UP,
-        };
+            Move,
+            LeftClick,
+            LeftDown,
+            LeftUp,
+        }
 
         // IsStopRequest: Stop()が呼ばれたら true。ExecuteSleep()等がループを途中で
         //   打ち切るために見ている中断フラグ(SetXXXメソッド無しで直接参照される)。
@@ -2718,22 +2632,22 @@ namespace StandardTemplate
 
         public String FileFormat { get; set; }
         public int FileIdx { get; set; }
-        public CAPTURE_TARGET CaptureTarget { get; set; }
+        public CaptureTargetType CaptureTarget { get; set; }
 
         // SetMousePointでX/Yを個別に書き換えている(構造体のメンバーへの代入)ため、プロパティにせずフィールドのまま
         public Point MousePt;
-        public MOUSE_EVENT MouseEvent { get; set; } = MOUSE_EVENT.LEFT_CLICK;
+        public MouseEventType MouseEvent { get; set; } = MouseEventType.LeftClick;
         public Boolean IsMouseMove { get; set; } = true;
         public Boolean IsRestoreMousePos { get; set; } = false;
         public TimeSpan SleepTime { get; set; }    // Sleepする時間
         public TimeSpan SleepCycle { get; set; }   // Sleepを刻む間隔
 
-        // CAPTURE_TARGET.CURRENT_SCREEN で「このコントロール(通常は呼び出し元のForm)が
+        // CaptureTargetType.CurrentScreen で「このコントロール(通常は呼び出し元のForm)が
         // 今表示されているモニタ」を判定するために使う。設定されていなければ
         // Screen.PrimaryScreen(メイン画面)にフォールバックする。
         public Control TargetWindow { get; set; }
 
-        private String ErrorLog;
+        private String _errorLog;   // 処理に失敗したファイル名(改行区切り)
         #endregion
 
         #region 初期化・パラメータ設定
@@ -2748,11 +2662,11 @@ namespace StandardTemplate
             IsStopRequest = false;
             IsCaptureCase = false;
 
-            ErrorLog = "";
+            _errorLog = "";
 
             FileFormat = "0";
             FileIdx = 0;
-            CaptureTarget = CAPTURE_TARGET.FULL_SCREEN;
+            CaptureTarget = CaptureTargetType.FullScreen;
 
             MousePt = new Point();
             SleepTime = new TimeSpan();
@@ -2778,7 +2692,7 @@ namespace StandardTemplate
         }
 
         // キャプチャ対象
-        public void SetCaptureTarget(CAPTURE_TARGET captTarget)
+        public void SetCaptureTarget(CaptureTargetType captTarget)
         {
             CaptureTarget = captTarget;
         }
@@ -2801,24 +2715,20 @@ namespace StandardTemplate
         // マウスの座標設定
         public Boolean SetMousePoint(String x, String y)
         {
-            Boolean isSetPoint = false;
             if (x.Equals("") || y.Equals(""))
             {
                 // 座標の指定なし
                 MousePt.X = 0;
                 MousePt.Y = 0;
-            }
-            else
-            {
-                MousePt.X = int.Parse(x);
-                MousePt.Y = int.Parse(y);
-                isSetPoint = true;
+                return false;
             }
 
-            return isSetPoint;
+            MousePt.X = int.Parse(x);
+            MousePt.Y = int.Parse(y);
+            return true;
         }
 
-        public void SetMouseEvent(MOUSE_EVENT mouseEvent)
+        public void SetMouseEvent(MouseEventType mouseEvent)
         {
             MouseEvent = mouseEvent;
         }
@@ -2844,13 +2754,13 @@ namespace StandardTemplate
                 {
                     break;
                 }
-                System.Threading.Thread.Sleep(SleepCycle);
+                Thread.Sleep(SleepCycle);
             }
         }
 
         public String GetErrorLog()
         {
-            return ErrorLog;
+            return _errorLog;
         }
         #endregion
 
@@ -2874,29 +2784,23 @@ namespace StandardTemplate
             if (!CaptureEvent(pictFileName))
             {
                 // 処理失敗したファイル名を追記
-                ErrorLog += pictFileName + Environment.NewLine;
+                _errorLog += pictFileName + Environment.NewLine;
             }
         }
 
         private Boolean CaptureEvent(String pictFileName)
         {
-            Boolean isSuccess = false;
             switch (CaptureTarget)
             {
-                case CAPTURE_TARGET.FULL_SCREEN:
-                    isSuccess = SaveWithPrintScreen("^{PRTSC}", pictFileName);
-                    break;
-                case CAPTURE_TARGET.CURRENT_SCREEN:
-                    isSuccess = SaveWithCaptureCurrentScreen(pictFileName);
-                    break;
-                case CAPTURE_TARGET.CURRENT_WINDOW:
-                    isSuccess = SaveWithPrintScreen("%{PRTSC}", pictFileName);
-                    break;
+                case CaptureTargetType.FullScreen:
+                    return SaveWithPrintScreen("^{PRTSC}", pictFileName);
+                case CaptureTargetType.CurrentScreen:
+                    return SaveWithCaptureCurrentScreen(pictFileName);
+                case CaptureTargetType.CurrentWindow:
+                    return SaveWithPrintScreen("%{PRTSC}", pictFileName);
                 default:
-                    break;
+                    return false;
             }
-
-            return isSuccess;
         }
 
         // PrintScreenでクリップボードへ取り込んでから保存する
@@ -2910,42 +2814,33 @@ namespace StandardTemplate
 
         private Boolean SaveClipboard(String pictFileName)
         {
-            Boolean isSuccess = true;
-            Image img = null;
             try
             {
                 IDataObject d = Clipboard.GetDataObject();
 
                 //ビットマップデータ形式に関連付けられているデータを取得
-                img = (Image)d.GetData(DataFormats.Bitmap);
-                img.Save(pictFileName);
+                // (取得できなかった場合はnullになり、Saveで例外→falseを返す。usingはnullでも安全)
+                using (Image img = (Image)d.GetData(DataFormats.Bitmap))
+                {
+                    img.Save(pictFileName);
+                }
+                return true;
             }
             catch (Exception)
             {
-                isSuccess = false;
+                return false;
             }
-            finally
-            {
-                // クリップボードから画像を取得できなかった場合はnullのままなので、そのままDisposeすると例外になる
-                if (img != null)
-                {
-                    img.Dispose();
-                }
-            }
-
-            return isSuccess;
         }
 
         private Boolean SaveWithCaptureCurrentScreen(String pictFileName)
         {
-            // 「CURRENT_SCREEN」という名前なのに、以前は全モニタをまとめた1枚を作っていた
+            // 「CurrentScreen」という名前なのに、以前は全モニタをまとめた1枚を作っていた
             // (バグ修正前は範囲計算自体も間違っていたが、直しても「全画面結合」という
-            // 設計そのものがFULL_SCREEN(Ctrl+PrintScreenで撮る画面全体=全モニタ結合と
+            // 設計そのものがFullScreen(Ctrl+PrintScreenで撮る画面全体=全モニタ結合と
             // ほぼ同じ結果)と機能が重複していた)。名前の通り「呼び出し元のウィンドウが
             // 今表示されているモニタ1枚だけ」を撮るように直した。
             // SaveClipboard(SendKeys経由の他2種)と同じく、失敗時はtrueを固定で返さず
             // falseを返すようにした(ディスク書き込み失敗・GDI例外等を吸収する)。
-            Boolean isSuccess = true;
             try
             {
                 Screen targetScreen = (TargetWindow != null) ? Screen.FromControl(TargetWindow) : Screen.PrimaryScreen;
@@ -2965,13 +2860,12 @@ namespace StandardTemplate
                     // ファイル保存
                     bmp.Save(pictFileName);
                 }
+                return true;
             }
             catch (Exception)
             {
-                isSuccess = false;
+                return false;
             }
-
-            return isSuccess;
         }
 
         // モニタの物理ピクセルでの範囲を取得する。
@@ -3000,7 +2894,7 @@ namespace StandardTemplate
 
         #region マウス操作
         // マウスのイベント処理
-        public void MouseProc(String x, String y, MOUSE_EVENT mouseEvent)
+        public void MouseProc(String x, String y, MouseEventType mouseEvent)
         {
             // 座標設定
             if (!SetMousePoint(x, y))
@@ -3033,16 +2927,16 @@ namespace StandardTemplate
 
             switch(MouseEvent)
             {
-                case MOUSE_EVENT.LEFT_CLICK:
+                case MouseEventType.LeftClick:
                     input[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
                     input[1].mi.dwFlags = MOUSEEVENTF_LEFTUP;
                     inputCount = 2;
                     break;
-                case MOUSE_EVENT.LEFT_DOWN:
+                case MouseEventType.LeftDown:
                     input[0].mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
                     inputCount = 1;
                     break;
-                case MOUSE_EVENT.LEFT_UP:
+                case MouseEventType.LeftUp:
                     input[0].mi.dwFlags = MOUSEEVENTF_LEFTUP;
                     inputCount = 1;
                     break;
@@ -3085,10 +2979,10 @@ namespace StandardTemplate
         public Boolean UseTimeInLog { get; set; } = false;       // デバッグログに時間を入れる
         public String DebugLogFileName { get; set; } = "DebugLog.txt";
 
-        private int FileIndex = 1;
-        private int FileIndexDigit = 2;
+        private const int _fileIndexDigit = 2;
+        private int _fileIndex = 1;
 
-        private StcFileInputOutput fio = new StcFileInputOutput();
+        private readonly StcFileInputOutput _fio = new StcFileInputOutput();
 
         // コンストラクタ
         public StcDebug()
@@ -3104,16 +2998,13 @@ namespace StandardTemplate
         // 共通ファイルにWrite
         public void WriteData(String data, Boolean isAppend = true)
         {
-            if (IsDebugMode == true)
+            if (!IsDebugMode)
             {
-                String writeData = "";
-                if (UseTimeInLog)
-                {
-                    writeData = DateTime.Now.ToString() + "  : ";
-                }
-                writeData += data + Environment.NewLine;
-                fio.SaveFile(DebugLogFileName, writeData, isAppend);
+                return;
             }
+
+            String timePrefix = UseTimeInLog ? DateTime.Now.ToString() + "  : " : "";
+            _fio.SaveFile(DebugLogFileName, timePrefix + data + Environment.NewLine, isAppend);
         }
 
         // 新しいファイルにWrite
@@ -3124,16 +3015,16 @@ namespace StandardTemplate
                 return;
             }
 
-            String fileName = FileIndex.ToString().PadLeft(FileIndexDigit, '0');
+            String fileName = _fileIndex.ToString().PadLeft(_fileIndexDigit, '0');
             if (UseTimeInFileName)
             {
-                fileName += System.DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
+                fileName += DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss");
             }
             fileName += filenameSuffixStr + "." + extension;
 
-            fio.SaveFile(fileName, data);
+            _fio.SaveFile(fileName, data);
 
-            FileIndex++;
+            _fileIndex++;
         }
     }
 }

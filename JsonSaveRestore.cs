@@ -70,17 +70,8 @@ namespace StandardTemplate
                 return;
             }
 
-            try
-            {
-                if (File.Exists(oldPath))
-                {
-                    File.Delete(oldPath);
-                }
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                // 消せなくても保存自体は成功しているので実害は無い
-            }
+            // 消せなくても保存自体は成功しているので実害は無い
+            AtomicFile.TryDelete(oldPath);
         }
 
         public static Boolean Save(StcSaveRestore saveRestore, String filePath)
@@ -127,21 +118,9 @@ namespace StandardTemplate
             // JSONで保存できたときだけ旧XMLを消す(消してから保存に失敗して設定を失うことがないように)
             if (Save(saveRestore, jsonPath))
             {
-                TryDeleteFile(xmlPath);
+                AtomicFile.TryDelete(xmlPath);
             }
             return true;
-        }
-
-        private static void TryDeleteFile(String filePath)
-        {
-            try
-            {
-                File.Delete(filePath);
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                // 消せなくても実害は無い(以降はJSONが優先して読まれる)
-            }
         }
     }
 }

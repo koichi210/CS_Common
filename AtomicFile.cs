@@ -36,5 +36,21 @@ namespace StandardTemplate
         {
             Write(filePath, tempPath => File.WriteAllText(tempPath, text, enc));
         }
+
+        // XML→JSON移行後の旧ファイル削除などで使う「消せたら消す」。ファイルが無い・消せない場合も
+        // 例外にしない(SimpleSettings/JsonSaveRestoreに同じ処理が3か所コピーされていたため集約した)
+        public static void TryDelete(String filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+            }
+        }
     }
 }

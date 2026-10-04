@@ -36,19 +36,19 @@ namespace StandardTemplate.Wpf
             public Action<List<List<String>>> Set;
         }
 
-        private readonly List<ValueEntry> Values = new List<ValueEntry>();
-        private readonly List<ListEntry> Lists = new List<ListEntry>();
-        private readonly List<GridEntry> Grids = new List<GridEntry>();
+        private readonly List<ValueEntry> _values = new List<ValueEntry>();
+        private readonly List<ListEntry> _lists = new List<ListEntry>();
+        private readonly List<GridEntry> _grids = new List<GridEntry>();
 
         private static String MakeKey(String attrName, String attrValue)
         {
-            return attrName + "|" + attrValue;
+            return GenericProfile.MakeKey(attrName, attrValue);
         }
 
         // 任意の値を登録する(getter/setterを渡せば、TextBox等以外の値も保存対象にできる)
         public void RegisterValue(String attrName, String attrValue, Func<String> getter, Action<String> setter, String defaultValue = "", String legacyAttrValue = null)
         {
-            Values.Add(new ValueEntry
+            _values.Add(new ValueEntry
             {
                 Key = MakeKey(attrName, attrValue),
                 LegacyKey = (legacyAttrValue == null) ? null : MakeKey(attrName, legacyAttrValue),
@@ -60,13 +60,13 @@ namespace StandardTemplate.Wpf
 
         public void RegisterList(String attrName, String attrValue, Func<List<String>> getter, Action<List<String>> setter)
         {
-            Lists.Add(new ListEntry { Key = MakeKey(attrName, attrValue), Get = getter, Set = setter });
+            _lists.Add(new ListEntry { Key = MakeKey(attrName, attrValue), Get = getter, Set = setter });
         }
 
         // DataGrid等の表データ(行×列の文字列)を登録する
         public void RegisterGrid(String attrName, String attrValue, Func<List<List<String>>> getter, Action<List<List<String>>> setter)
         {
-            Grids.Add(new GridEntry { Key = MakeKey(attrName, attrValue), Get = getter, Set = setter });
+            _grids.Add(new GridEntry { Key = MakeKey(attrName, attrValue), Get = getter, Set = setter });
         }
 
         public void RegisterCtrl(String attrName, String attrValue, TextBox ctrl, String defaultValue = "", String legacyAttrValue = null)
@@ -117,9 +117,9 @@ namespace StandardTemplate.Wpf
         public GenericProfile BuildGenericProfile()
         {
             GenericProfile profile = new GenericProfile();
-            foreach (ValueEntry entry in Values) { profile.Values[entry.Key] = entry.Get(); }
-            foreach (ListEntry entry in Lists) { profile.Lists[entry.Key] = entry.Get(); }
-            foreach (GridEntry entry in Grids) { profile.Grids[entry.Key] = entry.Get(); }
+            foreach (ValueEntry entry in _values) { profile.Values[entry.Key] = entry.Get(); }
+            foreach (ListEntry entry in _lists) { profile.Lists[entry.Key] = entry.Get(); }
+            foreach (GridEntry entry in _grids) { profile.Grids[entry.Key] = entry.Get(); }
             return profile;
         }
 
@@ -129,7 +129,7 @@ namespace StandardTemplate.Wpf
         {
             // 一覧(Items.Clear)を先に戻す。同じComboBoxをRegisterCtrlとRegisterCtrlListの両方で登録した場合、
             // 値(Text)を先に入れるとWPFではItems.Clearで消えてしまうため
-            foreach (ListEntry entry in Lists)
+            foreach (ListEntry entry in _lists)
             {
                 List<String> items;
                 if (profile == null || !profile.Lists.TryGetValue(entry.Key, out items) || items == null)
@@ -139,7 +139,7 @@ namespace StandardTemplate.Wpf
                 entry.Set(items);
             }
 
-            foreach (GridEntry entry in Grids)
+            foreach (GridEntry entry in _grids)
             {
                 List<List<String>> rows;
                 if (profile == null || !profile.Grids.TryGetValue(entry.Key, out rows) || rows == null)
@@ -149,7 +149,7 @@ namespace StandardTemplate.Wpf
                 entry.Set(rows);
             }
 
-            foreach (ValueEntry entry in Values)
+            foreach (ValueEntry entry in _values)
             {
                 String value;
                 if (profile != null && (profile.Values.TryGetValue(entry.Key, out value) ||

@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 internal static class StcExceptionGuard
 {
-    private static int IsShowing = 0;
+    private static int _isShowing = 0;
 
     // Main()の先頭(フォーム生成より前)で呼ぶこと。SetUnhandledExceptionModeはウィンドウ生成後だと例外になる
     // 既定のJITデバッグダイアログは画面の裏に隠れて「固まった」ように見えるため、自前で通知して処理を継続させる
@@ -18,7 +18,7 @@ internal static class StcExceptionGuard
     private static void Notify(Exception ex, Boolean canContinue)
     {
         // タイマー処理などで同じ例外が連発しても、ダイアログが無限に積み重ならないようにする
-        if (Interlocked.Exchange(ref IsShowing, 1) == 1 && canContinue)
+        if (Interlocked.Exchange(ref _isShowing, 1) == 1 && canContinue)
         {
             return;
         }
@@ -36,7 +36,7 @@ internal static class StcExceptionGuard
         }
         finally
         {
-            Interlocked.Exchange(ref IsShowing, 0);
+            Interlocked.Exchange(ref _isShowing, 0);
         }
     }
 }

@@ -20,30 +20,30 @@ namespace StandardTemplate
     class StcSimpleSettings
     {
         // 旧形式(XML)から新形式(JSON)への移行用の拡張子
-        private const String JsonExtension = ".json";
-        private const String XmlExtension = ".xml";
+        private const String _jsonExtension = ".json";
+        private const String _xmlExtension = ".xml";
 
-        private const String RootName = "root";
-        private const String ElementName = "Setting";
-        private const String AttributeName = "attribute";
+        private const String _rootName = "root";
+        private const String _elementName = "Setting";
+        private const String _attributeName = "attribute";
 
-        private readonly Dictionary<String, String> Values = new Dictionary<String, String>();
+        private readonly Dictionary<String, String> _values = new Dictionary<String, String>();
 
         public void Set(String key, String value)
         {
-            Values[key] = value;
+            _values[key] = value;
         }
 
         // 設定に無いキーはDefaultValueを返す
         public String Get(String key, String defaultValue = "")
         {
             String value;
-            return Values.TryGetValue(key, out value) ? value : defaultValue;
+            return _values.TryGetValue(key, out value) ? value : defaultValue;
         }
 
         public Boolean IsExist(String key)
         {
-            return Values.ContainsKey(key);
+            return _values.ContainsKey(key);
         }
 
         // 設定ファイルを読み込む(JSON優先)。
@@ -57,7 +57,7 @@ namespace StandardTemplate
                 return settings;
             }
 
-            String xmlPath = Path.ChangeExtension(jsonPath, XmlExtension);
+            String xmlPath = Path.ChangeExtension(jsonPath, _xmlExtension);
             settings = Load(xmlPath);
             if (settings == null)
             {
@@ -67,7 +67,7 @@ namespace StandardTemplate
             // JSONで保存できたときだけ旧XMLを消す(消してから保存に失敗して設定を失うことがないように)
             if (settings.SaveJson(jsonPath))
             {
-                TryDeleteFile(xmlPath);
+                AtomicFile.TryDelete(xmlPath);
             }
             return settings;
         }
@@ -75,11 +75,11 @@ namespace StandardTemplate
         // JSONで保存する。呼び出し側が.xmlのパスを渡してきても.jsonへ寄せる
         public Boolean SaveJson(String filePath)
         {
-            String jsonPath = Path.ChangeExtension(filePath, JsonExtension);
+            String jsonPath = Path.ChangeExtension(filePath, _jsonExtension);
             try
             {
                 // FormattingはSystem.Xmlにも同名の型があるため、どちらか明示する
-                AtomicFile.WriteAllText(jsonPath, JsonConvert.SerializeObject(Values, Newtonsoft.Json.Formatting.Indented),
+                AtomicFile.WriteAllText(jsonPath, JsonConvert.SerializeObject(_values, Newtonsoft.Json.Formatting.Indented),
                                         new System.Text.UTF8Encoding(false));
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is JsonException)
@@ -92,7 +92,7 @@ namespace StandardTemplate
         // ファイルが無い・読めない・壊れている場合はnullを返す
         public static StcSimpleSettings LoadJson(String filePath)
         {
-            String jsonPath = Path.ChangeExtension(filePath, JsonExtension);
+            String jsonPath = Path.ChangeExtension(filePath, _jsonExtension);
             if (!File.Exists(jsonPath))
             {
                 return null;
@@ -120,30 +120,19 @@ namespace StandardTemplate
             }
         }
 
-        private static void TryDeleteFile(String filePath)
-        {
-            try
-            {
-                File.Delete(filePath);
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                // 消せなくても実害は無い(以降はJSONが優先して読まれる)
-            }
-        }
 
         public Boolean Save(String filePath)
         {
             XmlDocument document = new XmlDocument();
             document.AppendChild(document.CreateXmlDeclaration("1.0", "UTF-8", null));
 
-            XmlElement root = document.CreateElement(RootName);
+            XmlElement root = document.CreateElement(_rootName);
             document.AppendChild(root);
 
-            foreach (KeyValuePair<String, String> pair in Values)
+            foreach (KeyValuePair<String, String> pair in _values)
             {
-                XmlElement element = document.CreateElement(ElementName);
-                element.SetAttribute(AttributeName, pair.Key);
+                XmlElement element = document.CreateElement(_elementName);
+                element.SetAttribute(_attributeName, pair.Key);
                 element.InnerText = pair.Value ?? "";
                 root.AppendChild(element);
             }
@@ -191,7 +180,7 @@ namespace StandardTemplate
                     continue;
                 }
 
-                String key = element.GetAttribute(AttributeName);
+                String key = element.GetAttribute(_attributeName);
                 if (key != String.Empty)
                 {
                     settings.Set(key, element.InnerText);

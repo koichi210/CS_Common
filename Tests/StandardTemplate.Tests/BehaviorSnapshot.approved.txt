@@ -68,15 +68,15 @@
   "abc123", "abc", "3", "01"  ->  !! FormatException
 
 ## StcUtils.GetFilePathType(String)
-  "C:\work\a.txt"       ->  WINDOWS_FULLPATH
-  "//depot/main/a.txt"  ->  PERFORCE_PATH
-  "home/user/a.txt"     ->  LINUX_PATH
-  "work\a.txt"          ->  WINDOWS_PATH
-  "a.txt"               ->  OTHER
-  ""                    ->  OTHER
-  "\\server\share"      ->  WINDOWS_PATH
-  "C:/work"             ->  WINDOWS_FULLPATH
-  "//"                  ->  PERFORCE_PATH
+  "C:\work\a.txt"       ->  WindowsFullPath
+  "//depot/main/a.txt"  ->  PerforcePath
+  "home/user/a.txt"     ->  LinuxPath
+  "work\a.txt"          ->  WindowsPath
+  "a.txt"               ->  Other
+  ""                    ->  Other
+  "\\server\share"      ->  WindowsPath
+  "C:/work"             ->  WindowsFullPath
+  "//"                  ->  PerforcePath
 
 ## StcUtils.IsWindowsPath(String)
    # 区切りが \ かどうかだけを見る。ドライブレターの有無は見ていない。
@@ -124,7 +124,7 @@
   "/home/user", "work"  ->  "/home/user/work"
   "", ""                ->  "/"
 
-## StcUtils.ChangeNewLineCodeLF2CRLF(String) / ChangeNewLineCodeCRLF2LF(String)
+## StcUtils.ChangeNewLineCodeLf2Crlf(String) / ChangeNewLineCodeCrlf2Lf(String)
   LF2CRLF "a\nb"    ->  "a\r\nb"
   CRLF2LF "a\nb"    ->  "a\nb"
   LF2CRLF "a\r\nb"  ->  "a\r\nb"
@@ -138,14 +138,14 @@
   LF2CRLF ""        ->  ""
   CRLF2LF ""        ->  ""
 
-## StcUtils.ChangeNewLineCode(ENCODING_TYPE, String)
-   # いったん LF に統一してから、SHIFT_JIS のときだけ CRLF に戻す。
-  SHIFT_JIS, "a\r\nb"  ->  "a\r\nb"
-  SHIFT_JIS, "a\nb"    ->  "a\r\nb"
-  SHIFT_JIS, "a\rb"    ->  "a\rb"
-  EUC_JP, "a\r\nb"     ->  "a\nb"
-  EUC_JP, "a\nb"       ->  "a\nb"
-  EUC_JP, "a\rb"       ->  "a\rb"
+## StcUtils.ChangeNewLineCode(EncodingType, String)
+   # いったん LF に統一してから、ShiftJis のときだけ CRLF に戻す。
+  ShiftJis, "a\r\nb"  ->  "a\r\nb"
+  ShiftJis, "a\nb"    ->  "a\r\nb"
+  ShiftJis, "a\rb"    ->  "a\rb"
+  EucJp, "a\r\nb"     ->  "a\nb"
+  EucJp, "a\nb"       ->  "a\nb"
+  EucJp, "a\rb"       ->  "a\rb"
 
 ## StcUtils.ChangeDoubleQuote2BackSlashDoubleQuote(String)
   "a"b"  ->  "a\"b"

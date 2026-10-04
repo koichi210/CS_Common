@@ -39,7 +39,7 @@ namespace StandardTemplate.Wpf
         }
 
         // 付け外しの管理用(TextBoxごとに今付いているAdorner)
-        private static readonly DependencyProperty AdornerProperty = DependencyProperty.RegisterAttached(
+        private static readonly DependencyProperty _adornerProperty = DependencyProperty.RegisterAttached(
             "Adorner", typeof(PlaceholderAdorner), typeof(Placeholder), new PropertyMetadata(null));
 
         private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -96,7 +96,7 @@ namespace StandardTemplate.Wpf
 
         private static void Attach(TextBox textBox)
         {
-            if (textBox.GetValue(AdornerProperty) != null)
+            if (textBox.GetValue(_adornerProperty) != null)
             {
                 return;
             }
@@ -109,12 +109,12 @@ namespace StandardTemplate.Wpf
 
             PlaceholderAdorner adorner = new PlaceholderAdorner(textBox);
             layer.Add(adorner);
-            textBox.SetValue(AdornerProperty, adorner);
+            textBox.SetValue(_adornerProperty, adorner);
         }
 
         private static void Detach(TextBox textBox)
         {
-            PlaceholderAdorner adorner = textBox.GetValue(AdornerProperty) as PlaceholderAdorner;
+            PlaceholderAdorner adorner = textBox.GetValue(_adornerProperty) as PlaceholderAdorner;
             if (adorner == null)
             {
                 return;
@@ -125,12 +125,12 @@ namespace StandardTemplate.Wpf
             {
                 layer.Remove(adorner);
             }
-            textBox.ClearValue(AdornerProperty);
+            textBox.ClearValue(_adornerProperty);
         }
 
         private static void Refresh(TextBox textBox)
         {
-            PlaceholderAdorner adorner = textBox.GetValue(AdornerProperty) as PlaceholderAdorner;
+            PlaceholderAdorner adorner = textBox.GetValue(_adornerProperty) as PlaceholderAdorner;
             if (adorner != null)
             {
                 adorner.InvalidateVisual();
@@ -140,25 +140,25 @@ namespace StandardTemplate.Wpf
         private sealed class PlaceholderAdorner : Adorner
         {
             // 文字の開始位置をTextBox内のキャレット位置に揃えるための、枠+Padding以外の内側余白
-            private const Double InnerMargin = 2.0;
+            private const Double _innerMargin = 2.0;
 
-            private readonly TextBox textBox;
+            private readonly TextBox _textBox;
 
             public PlaceholderAdorner(TextBox textBox) : base(textBox)
             {
-                this.textBox = textBox;
+                _textBox = textBox;
                 IsHitTestVisible = false;
             }
 
             protected override void OnRender(DrawingContext drawingContext)
             {
-                String text = GetText(textBox);
-                if (!textBox.IsVisible || !String.IsNullOrEmpty(textBox.Text) || String.IsNullOrEmpty(text))
+                String text = GetText(_textBox);
+                if (!_textBox.IsVisible || !String.IsNullOrEmpty(_textBox.Text) || String.IsNullOrEmpty(text))
                 {
                     return;
                 }
 
-                Typeface typeface = new Typeface(textBox.FontFamily, textBox.FontStyle, textBox.FontWeight, textBox.FontStretch);
+                Typeface typeface = new Typeface(_textBox.FontFamily, _textBox.FontStyle, _textBox.FontWeight, _textBox.FontStretch);
 
                 // pixelsPerDip付きのコンストラクタ/VisualTreeHelper.GetDpiは.NET 4.6.2以降にしか無く、
                 // それより古いターゲットのプロジェクトでもビルドできるよう、旧コンストラクタを使う
@@ -166,33 +166,33 @@ namespace StandardTemplate.Wpf
                 FormattedText formatted = new FormattedText(
                     text,
                     CultureInfo.CurrentUICulture,
-                    textBox.FlowDirection,
+                    _textBox.FlowDirection,
                     typeface,
-                    textBox.FontSize,
+                    _textBox.FontSize,
                     Brushes.Gray);
 #pragma warning restore 618
 
-                Double left = textBox.BorderThickness.Left + textBox.Padding.Left + InnerMargin;
-                Double right = textBox.BorderThickness.Right + textBox.Padding.Right + InnerMargin;
-                Double top = textBox.BorderThickness.Top + textBox.Padding.Top;
-                Double bottom = textBox.BorderThickness.Bottom + textBox.Padding.Bottom;
-                Double innerHeight = Math.Max(0, textBox.ActualHeight - top - bottom);
+                Double left = _textBox.BorderThickness.Left + _textBox.Padding.Left + _innerMargin;
+                Double right = _textBox.BorderThickness.Right + _textBox.Padding.Right + _innerMargin;
+                Double top = _textBox.BorderThickness.Top + _textBox.Padding.Top;
+                Double bottom = _textBox.BorderThickness.Bottom + _textBox.Padding.Bottom;
+                Double innerHeight = Math.Max(0, _textBox.ActualHeight - top - bottom);
 
-                formatted.MaxTextWidth = Math.Max(1, textBox.ActualWidth - left - right);
+                formatted.MaxTextWidth = Math.Max(1, _textBox.ActualWidth - left - right);
                 formatted.MaxLineCount = 1;
                 formatted.Trimming = TextTrimming.CharacterEllipsis;
 
                 Double y = top;
-                if (textBox.VerticalContentAlignment == VerticalAlignment.Center)
+                if (_textBox.VerticalContentAlignment == VerticalAlignment.Center)
                 {
                     y = top + (innerHeight - formatted.Height) / 2;
                 }
-                else if (textBox.VerticalContentAlignment == VerticalAlignment.Bottom)
+                else if (_textBox.VerticalContentAlignment == VerticalAlignment.Bottom)
                 {
                     y = top + innerHeight - formatted.Height;
                 }
 
-                drawingContext.PushClip(new RectangleGeometry(new Rect(0, 0, textBox.ActualWidth, textBox.ActualHeight)));
+                drawingContext.PushClip(new RectangleGeometry(new Rect(0, 0, _textBox.ActualWidth, _textBox.ActualHeight)));
                 drawingContext.DrawText(formatted, new Point(left, y));
                 drawingContext.Pop();
             }

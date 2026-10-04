@@ -3,6 +3,7 @@
 # 差分が出た = 呼び出し側に影響する変更をした、という意味。
 
 TYPE internal static class StandardTemplate.AtomicFile
+    METHOD public static Void TryDelete(String filePath)
     METHOD public static Void Write(String filePath, Action<String> writeTo)
     METHOD public static Void WriteAllText(String filePath, String text, Encoding enc)
 
@@ -15,30 +16,31 @@ TYPE public class StandardTemplate.CaptWindow
     METHOD public Void ExecuteSleep()
     METHOD public Void Initialize()
     METHOD public Void MouseProc()
-    METHOD public Void MouseProc(String x, String y, MOUSE_EVENT mouseEvent)
+    METHOD public Void MouseProc(String x, String y, MouseEventType mouseEvent)
     METHOD public Void SetCaptureCase(Boolean isCapture)
-    METHOD public Void SetCaptureTarget(CAPTURE_TARGET captTarget)
+    METHOD public Void SetCaptureTarget(CaptureTargetType captTarget)
     METHOD public Void SetFileFormat(String format)
     METHOD public Void SetFileIdx(Int32 idx)
-    METHOD public Void SetMouseEvent(MOUSE_EVENT mouseEvent)
+    METHOD public Void SetMouseEvent(MouseEventType mouseEvent)
     METHOD public Void SetMouseMove(Boolean isMove)
     METHOD public Void SetRestoreMousePosition(Boolean isRestore)
     METHOD public Void SetSleepTimeMsec(String msec)
     METHOD public Void Stop()
 
-TYPE public enum StandardTemplate.CaptWindow+CAPTURE_TARGET
-    ENUM   CURRENT_SCREEN = 1
-    ENUM   CURRENT_WINDOW = 2
-    ENUM   FULL_SCREEN = 0
+TYPE public enum StandardTemplate.CaptWindow+CaptureTargetType
+    ENUM   CurrentScreen = 1
+    ENUM   CurrentWindow = 2
+    ENUM   FullScreen = 0
 
-TYPE public enum StandardTemplate.CaptWindow+MOUSE_EVENT
-    ENUM   LEFT_CLICK = 1
-    ENUM   LEFT_DOWN = 2
-    ENUM   LEFT_UP = 3
-    ENUM   MOVE = 0
+TYPE public enum StandardTemplate.CaptWindow+MouseEventType
+    ENUM   LeftClick = 1
+    ENUM   LeftDown = 2
+    ENUM   LeftUp = 3
+    ENUM   Move = 0
 
 TYPE public class StandardTemplate.GenericProfile
     CTOR   public GenericProfile()
+    METHOD public static String MakeKey(String attrName, String attrValue)
 
 TYPE public static class StandardTemplate.JsonFileStorage
     METHOD public static T Load<T>(String filePath)
@@ -55,10 +57,16 @@ TYPE public class StandardTemplate.NaturalStringComparer
     CTOR   public NaturalStringComparer()
     METHOD public Int32 Compare(String x, String y)
 
+TYPE internal static class StandardTemplate.PathDropResolver
+    METHOD public static String Resolve(String droppedPath, Boolean folderPathOnly)
+
+TYPE public class StandardTemplate.PathDroppedEventArgs : EventArgs
+    CTOR   public PathDroppedEventArgs(String path)
+
 TYPE internal abstract class StandardTemplate.StcBaseForm`1 : Form
     CTOR   protected StcBaseForm`1()
-    FIELD  protected StcUtils util
-    FIELD  protected TSaveRestore sr
+    FIELD  protected StcUtils _util
+    FIELD  protected TSaveRestore _sr
     METHOD protected Void InitializeCommonSettings(Icon formIcon)
 
 TYPE public class StandardTemplate.StcDebug
@@ -75,8 +83,8 @@ TYPE public class StandardTemplate.StcException : Exception
 
 TYPE public class StandardTemplate.StcFileInputOutput
     CTOR   public StcFileInputOutput()
-    METHOD public Boolean ChangeStringCodeEUC2SJIS(String inFileName, String outFileName)
-    METHOD public Boolean ChangeStringCodeUTF2SJIS(String inFileName, String outFileName)
+    METHOD public Boolean ChangeStringCodeEuc2Sjis(String inFileName, String outFileName)
+    METHOD public Boolean ChangeStringCodeUtf2Sjis(String inFileName, String outFileName)
     METHOD public Boolean DeleteAnyFile(String targetName)
     METHOD public Boolean DeleteDirectoryAndFile(String deletePath)
     METHOD public Boolean DeleteFileWithRemoveReadonlyAttribute(String deleteFile)
@@ -92,15 +100,15 @@ TYPE public class StandardTemplate.StcFileInputOutput
     METHOD public String SelectLoadFileName(String fileName = "", String initialDirectory = "")
     METHOD public String SelectSaveFileName(String fileName, String initialDirectory = "")
     METHOD public Void CreateFile(String fileName, String data, Boolean debugMode = false)
-    METHOD public Void CreateFile(String fileName, String data, ENCODING_TYPE encodingType, Boolean debugMode = false)
+    METHOD public Void CreateFile(String fileName, String data, EncodingType encodingType, Boolean debugMode = false)
     METHOD public Void MoveDirectory(String sourcePath, String targetPath, Boolean isSubDirInclude = true)
     METHOD public Void RemoveReadonlyAttribute(DirectoryInfo dirInfo)
     METHOD public Void RemoveReadonlyAttribute(FileInfo fi)
     METHOD public Void SaveFile(String filePath, String data, Boolean isAppend = false)
 
-TYPE public enum StandardTemplate.StcFileInputOutput+ENCODING_TYPE
-    ENUM   EUC_JP = 1
-    ENUM   SHIFT_JIS = 0
+TYPE public enum StandardTemplate.StcFileInputOutput+EncodingType
+    ENUM   EucJp = 1
+    ENUM   ShiftJis = 0
 
 TYPE internal class StandardTemplate.StcSaveRestore
     CTOR   public StcSaveRestore()
@@ -135,8 +143,8 @@ TYPE internal class StandardTemplate.StcSaveRestore
 
 TYPE public class StandardTemplate.StcSecure
     CTOR   public StcSecure()
-    METHOD public String Decode(Byte[] desKey, Byte[] desIV, Byte[] cryptData)
-    METHOD public String Encode(String str, out Byte[] desKey, out Byte[] desIV, out Byte[] cryptData)
+    METHOD public String Decode(Byte[] desKey, Byte[] desIv, Byte[] cryptData)
+    METHOD public String Encode(String str, out Byte[] desKey, out Byte[] desIv, out Byte[] cryptData)
 
 TYPE public class StandardTemplate.StcUtils
     CTOR   public StcUtils()
@@ -152,7 +160,7 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public Boolean RemoveReadonlyAttribute(String fileName)
     METHOD public Boolean SetClipboardData(Object data)
     METHOD public Boolean SetClipboardText(String text)
-    METHOD public FILE_PATH_TYPE GetFilePathType(String filePath)
+    METHOD public FilePathType GetFilePathType(String filePath)
     METHOD public Int32 GetInteger(String text)
     METHOD public Int64 GetNumber(String srcString, Int32 defaultValue = 1)
     METHOD public Int64 GetNumber(String srcString, Int32 startIdx, Int32 length, String defaultString = "01")
@@ -168,9 +176,9 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public String ChangeCygwinPath2WindowsPath(String oldPath)
     METHOD public String ChangeDoubleQuote2BackSlashDoubleQuote(String source)
     METHOD public String ChangeLinuxPath2WindowsPath(String oldPath)
-    METHOD public String ChangeNewLineCode(ENCODING_TYPE encodingType, String source)
-    METHOD public String ChangeNewLineCodeCRLF2LF(String source)
-    METHOD public String ChangeNewLineCodeLF2CRLF(String source)
+    METHOD public String ChangeNewLineCode(EncodingType encodingType, String source)
+    METHOD public String ChangeNewLineCodeCrlf2Lf(String source)
+    METHOD public String ChangeNewLineCodeLf2Crlf(String source)
     METHOD public String ChangeStrArray2Linear(String[] strArray, String separator)
     METHOD public String ChangeWindowsPath2CygwinPath(String oldPath)
     METHOD public String ChangeWindowsPath2LinuxPath(String oldPath)
@@ -206,11 +214,11 @@ TYPE public class StandardTemplate.StcUtils
     METHOD public Void UpdateProfileList(ComboBox comboCtrl, String defaultProfileName = "", String directoryPath = "", String fileExtension = "*.xml")
     METHOD public Void UpdateProfileList(ComboBox comboCtrl, String[] fileExtensions, String defaultProfileName = "", String directoryPath = "")
 
-TYPE public enum StandardTemplate.StcUtils+FILE_PATH_TYPE
-    ENUM   LINUX_PATH = 2
-    ENUM   OTHER = 4
-    ENUM   PERFORCE_PATH = 1
-    ENUM   WINDOWS_FULLPATH = 0
-    ENUM   WINDOWS_PATH = 3
+TYPE public enum StandardTemplate.StcUtils+FilePathType
+    ENUM   LinuxPath = 2
+    ENUM   Other = 4
+    ENUM   PerforcePath = 1
+    ENUM   WindowsFullPath = 0
+    ENUM   WindowsPath = 3
 
-# total: 17 types / 177 members
+# total: 19 types / 181 members

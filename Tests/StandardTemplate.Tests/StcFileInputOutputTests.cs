@@ -7,7 +7,7 @@ namespace StandardTemplate.Tests
 {
     /// <summary>
     /// StcFileInputOutput のキャラクタライゼーションテスト。
-    /// ChangeStringCodeEUC2SJISは本番の17プロジェクトからは未使用で、既存のテストも
+    /// ChangeStringCodeEuc2Sjisは本番の17プロジェクトからは未使用で、既存のテストも
     /// 無かった。簡略化する前に、現状の挙動を固定する特性化テストとして追加した。
     /// </summary>
     [TestClass]
@@ -37,10 +37,10 @@ namespace StandardTemplate.Tests
             }
         }
 
-        // --- ChangeStringCodeEUC2SJIS -------------------------------------------------
+        // --- ChangeStringCodeEuc2Sjis -------------------------------------------------
 
         [TestMethod]
-        public void ChangeStringCodeEUC2SJIS_EUCJPのファイルをShiftJISへ変換する()
+        public void ChangeStringCodeEuc2Sjis_EUCJPのファイルをShiftJISへ変換する()
         {
             string inPath = Path.Combine(tempDirectory, "in.txt");
             string outPath = Path.Combine(tempDirectory, "out.txt");
@@ -48,7 +48,7 @@ namespace StandardTemplate.Tests
 
             File.WriteAllBytes(inPath, Encoding.GetEncoding("EUC-JP").GetBytes(content));
 
-            bool result = fio.ChangeStringCodeEUC2SJIS(inPath, outPath);
+            bool result = fio.ChangeStringCodeEuc2Sjis(inPath, outPath);
 
             Assert.IsTrue(result);
             byte[] outBytes = File.ReadAllBytes(outPath);
@@ -56,18 +56,18 @@ namespace StandardTemplate.Tests
         }
 
         [TestMethod]
-        public void ChangeStringCodeEUC2SJIS_入力ファイルが存在しなければfalseを返す()
+        public void ChangeStringCodeEuc2Sjis_入力ファイルが存在しなければfalseを返す()
         {
             string inPath = Path.Combine(tempDirectory, "nothing.txt");
             string outPath = Path.Combine(tempDirectory, "out.txt");
 
-            bool result = fio.ChangeStringCodeEUC2SJIS(inPath, outPath);
+            bool result = fio.ChangeStringCodeEuc2Sjis(inPath, outPath);
 
             Assert.IsFalse(result);
         }
 
         [TestMethod]
-        public void ChangeStringCodeEUC2SJIS_英数字だけでも変換できる()
+        public void ChangeStringCodeEuc2Sjis_英数字だけでも変換できる()
         {
             string inPath = Path.Combine(tempDirectory, "ascii_in.txt");
             string outPath = Path.Combine(tempDirectory, "ascii_out.txt");
@@ -75,7 +75,7 @@ namespace StandardTemplate.Tests
 
             File.WriteAllBytes(inPath, Encoding.GetEncoding("EUC-JP").GetBytes(content));
 
-            bool result = fio.ChangeStringCodeEUC2SJIS(inPath, outPath);
+            bool result = fio.ChangeStringCodeEuc2Sjis(inPath, outPath);
 
             Assert.IsTrue(result);
             byte[] outBytes = File.ReadAllBytes(outPath);

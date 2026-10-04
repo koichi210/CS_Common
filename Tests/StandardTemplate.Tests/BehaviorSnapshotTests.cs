@@ -234,20 +234,20 @@ namespace StandardTemplate.Tests
         {
             var util = new StcUtils();
 
-            r.Section("StcUtils.ChangeNewLineCodeLF2CRLF(String) / ChangeNewLineCodeCRLF2LF(String)");
+            r.Section("StcUtils.ChangeNewLineCodeLf2Crlf(String) / ChangeNewLineCodeCrlf2Lf(String)");
             foreach (string s in new[] { "a\nb", "a\r\nb", "a\rb", "a\n\nb", "abc", "" })
             {
                 string t = s;
-                r.Case("LF2CRLF " + BehaviorRecorder.Show(t), () => util.ChangeNewLineCodeLF2CRLF(t));
-                r.Case("CRLF2LF " + BehaviorRecorder.Show(t), () => util.ChangeNewLineCodeCRLF2LF(t));
+                r.Case("LF2CRLF " + BehaviorRecorder.Show(t), () => util.ChangeNewLineCodeLf2Crlf(t));
+                r.Case("CRLF2LF " + BehaviorRecorder.Show(t), () => util.ChangeNewLineCodeCrlf2Lf(t));
             }
 
-            r.Section("StcUtils.ChangeNewLineCode(ENCODING_TYPE, String)");
-            r.Note("いったん LF に統一してから、SHIFT_JIS のときだけ CRLF に戻す。");
-            foreach (StcFileInputOutput.ENCODING_TYPE t in
-                     (StcFileInputOutput.ENCODING_TYPE[])Enum.GetValues(typeof(StcFileInputOutput.ENCODING_TYPE)))
+            r.Section("StcUtils.ChangeNewLineCode(EncodingType, String)");
+            r.Note("いったん LF に統一してから、ShiftJis のときだけ CRLF に戻す。");
+            foreach (StcFileInputOutput.EncodingType t in
+                     (StcFileInputOutput.EncodingType[])Enum.GetValues(typeof(StcFileInputOutput.EncodingType)))
             {
-                StcFileInputOutput.ENCODING_TYPE type = t;
+                StcFileInputOutput.EncodingType type = t;
                 foreach (string s in new[] { "a\r\nb", "a\nb", "a\rb" })
                 {
                     string src = s;

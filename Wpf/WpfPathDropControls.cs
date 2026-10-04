@@ -5,7 +5,6 @@
 // WPFのTextBoxは自前でDragOverを処理してファイルのドロップを拒否してしまうため、
 // バブルより先に届くPreviewDragOver/PreviewDropで横取りしている。
 using System;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -18,16 +17,15 @@ namespace StandardTemplate.Wpf
                                   Func<String, PathDroppedEventArgs> raiseDropped)
         {
             ctrl.AllowDrop = true;
-            ctrl.PreviewDragOver += (s, e) =>
+
+            // DragEnter/DragOverで同じ判定をしていたので1つのハンドラにまとめた
+            DragEventHandler acceptFileDrop = (s, e) =>
             {
                 e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
                 e.Handled = true;
             };
-            ctrl.PreviewDragEnter += (s, e) =>
-            {
-                e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
-                e.Handled = true;
-            };
+            ctrl.PreviewDragOver += acceptFileDrop;
+            ctrl.PreviewDragEnter += acceptFileDrop;
             ctrl.PreviewDrop += (s, e) =>
             {
                 if (!e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -42,7 +40,7 @@ namespace StandardTemplate.Wpf
                     return;
                 }
 
-                String path = ResolvePath(paths[0], folderPathOnly());
+                String path = PathDropResolver.Resolve(paths[0], folderPathOnly());
                 PathDroppedEventArgs args = raiseDropped(path);
                 if (args.Cancel)
                 {
@@ -50,15 +48,6 @@ namespace StandardTemplate.Wpf
                 }
                 apply(path);
             };
-        }
-
-        public static String ResolvePath(String droppedPath, Boolean folderPathOnly)
-        {
-            if (folderPathOnly && !Directory.Exists(droppedPath) && File.Exists(droppedPath))
-            {
-                return Path.GetDirectoryName(droppedPath) ?? droppedPath;
-            }
-            return droppedPath;
         }
     }
 

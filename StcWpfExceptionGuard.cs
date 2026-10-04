@@ -5,7 +5,7 @@ using System.Windows;
 
 internal static class StcWpfExceptionGuard
 {
-    private static int IsShowing = 0;
+    private static int _isShowing = 0;
 
     public static void Install(Application app)
     {
@@ -32,7 +32,7 @@ internal static class StcWpfExceptionGuard
     private static void Notify(Exception ex, Boolean canContinue)
     {
         // 同じ例外が連発しても、ダイアログが無限に積み重ならないようにする
-        if (Interlocked.Exchange(ref IsShowing, 1) == 1 && canContinue)
+        if (Interlocked.Exchange(ref _isShowing, 1) == 1 && canContinue)
         {
             return;
         }
@@ -50,7 +50,7 @@ internal static class StcWpfExceptionGuard
         }
         finally
         {
-            Interlocked.Exchange(ref IsShowing, 0);
+            Interlocked.Exchange(ref _isShowing, 0);
         }
     }
 }

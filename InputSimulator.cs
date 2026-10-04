@@ -134,9 +134,9 @@ namespace InputSimulation
         }
 
         /// <summary>
-        /// KEYEVENTF_UNICODE
+        /// Win32のKEYEVENTF_UNICODE(仮想キーではなくUnicode文字として入力する)
         /// </summary>
-        private const int KBD_UNICODE = 0x0004;
+        private const int KEYEVENTF_UNICODE = 0x0004;
 
         /// <summary>
         /// マウス入力のイベントを追加します。
@@ -225,8 +225,8 @@ namespace InputSimulation
 
             foreach (char s in srcStr)
             {
-                AddKeyboardInput(ref inputs, (int)KeyboardStroke.KEY_DOWN | KBD_UNICODE, 0, (short)s, 0, 0);
-                AddKeyboardInput(ref inputs, (int)KeyboardStroke.KEY_UP | KBD_UNICODE, 0, (short)s, 0, 0);
+                AddKeyboardInput(ref inputs, (int)KeyboardStroke.KEY_DOWN | KEYEVENTF_UNICODE, 0, (short)s, 0, 0);
+                AddKeyboardInput(ref inputs, (int)KeyboardStroke.KEY_UP | KEYEVENTF_UNICODE, 0, (short)s, 0, 0);
             }
         }
 
@@ -238,7 +238,7 @@ namespace InputSimulation
         /// <param name="key">入力するキー</param>
         public static void AddKeyboardInput(ref System.Collections.Generic.List<Input> inputs, KeyboardStroke flags, System.Windows.Forms.Keys key)
         {
-            int keyboardFlags = (int)flags | KBD_UNICODE;
+            int keyboardFlags = (int)flags | KEYEVENTF_UNICODE;
             short virtualKey = (short)key;
             short scanCode = (short)NativeMethods.MapVirtualKey(virtualKey, 0);
 

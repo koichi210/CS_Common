@@ -35,33 +35,33 @@ namespace StandardTemplate
         public Boolean EnableUndoRedo { get; set; } = true;
 
         // Ctrl+ホイールでの拡大縮小の下限/上限、および1ノッチあたりの増減量
-        private const float MinZoomFactor = 0.5f;
-        private const float MaxZoomFactor = 3.0f;
-        private const float ZoomStep = 0.1f;
+        private const float _minZoomFactor = 0.5f;
+        private const float _maxZoomFactor = 3.0f;
+        private const float _zoomStep = 0.1f;
 
         // チェックボックスのグリフサイズの基準値(等倍時、96DPI相当のピクセル数)
-        private const int BaseCheckBoxSize = 13;
+        private const int _baseCheckBoxSize = 13;
 
-        private float zoomFactor = 1.0f;
+        private float _zoomFactor = 1.0f;
 
         // 拡大縮小の基準となる、コントロール生成直後(デザイナ設定反映後)の元サイズ
-        private Font baseFont;
-        private int baseRowHeight;
-        private int baseColumnHeadersHeight;
+        private Font _baseFont;
+        private int _baseRowHeight;
+        private int _baseColumnHeadersHeight;
 
         // 現在の拡大率(0.5〜3.0)。Ctrl+ホイールで変化する
         public float ZoomFactor
         {
-            get { return zoomFactor; }
+            get { return _zoomFactor; }
             set
             {
-                float clamped = Math.Max(MinZoomFactor, Math.Min(MaxZoomFactor, value));
-                if (Math.Abs(clamped - zoomFactor) < 0.0001f)
+                float clamped = Math.Max(_minZoomFactor, Math.Min(_maxZoomFactor, value));
+                if (Math.Abs(clamped - _zoomFactor) < 0.0001f)
                 {
                     return;
                 }
 
-                zoomFactor = clamped;
+                _zoomFactor = clamped;
                 ApplyZoom();
             }
         }
@@ -82,19 +82,19 @@ namespace StandardTemplate
         }
 
         // Undo/Redoの履歴。1エントリ=1回のUndo/Redo単位(複数セルをまとめたものも含む)
-        private readonly Stack<List<CellChange>> undoStack = new Stack<List<CellChange>>();
-        private readonly Stack<List<CellChange>> redoStack = new Stack<List<CellChange>>();
+        private readonly Stack<List<CellChange>> _undoStack = new Stack<List<CellChange>>();
+        private readonly Stack<List<CellChange>> _redoStack = new Stack<List<CellChange>>();
 
         // 各セルの「現在の値」のキャッシュ。CellValueChangedが飛んできた時点では
         // 新しい値しか分からないため、直前の値をここに覚えておいて差分を取る。
         // キーは (行番号 << 32 | 列番号) にエンコードしたlong
-        private readonly Dictionary<long, Object> valueCache = new Dictionary<long, Object>();
+        private readonly Dictionary<long, Object> _valueCache = new Dictionary<long, Object>();
 
         // BeginUndoBatch()〜EndUndoBatch()の間に集めた変更を溜めておくバッファ(null=バッチ中でない)
-        private List<CellChange> pendingBatch;
+        private List<CellChange> _pendingBatch;
 
         // Undo/Redoを適用している最中は、その変更自体を新たな履歴として拾わないようにするフラグ
-        private Boolean isApplyingHistory;
+        private Boolean _isApplyingHistory;
 
         public DataGridViewEx()
         {
@@ -114,14 +114,14 @@ namespace StandardTemplate
 
         private void CaptureBaseMetricsIfNeeded()
         {
-            if (baseFont != null)
+            if (_baseFont != null)
             {
                 return;
             }
 
-            baseFont = this.Font;
-            baseRowHeight = this.RowTemplate.Height;
-            baseColumnHeadersHeight = this.ColumnHeadersHeight;
+            _baseFont = this.Font;
+            _baseRowHeight = this.RowTemplate.Height;
+            _baseColumnHeadersHeight = this.ColumnHeadersHeight;
         }
 
         protected override void OnMouseWheel(MouseEventArgs e)
@@ -131,7 +131,7 @@ namespace StandardTemplate
                 int steps = e.Delta / SystemInformation.MouseWheelScrollDelta;
                 if (steps != 0)
                 {
-                    ZoomFactor = zoomFactor + steps * ZoomStep;
+                    ZoomFactor = _zoomFactor + steps * _zoomStep;
                 }
                 // Ctrl+ホイールは拡大縮小専用にし、行スクロールへは渡さない
                 return;
@@ -144,33 +144,33 @@ namespace StandardTemplate
         private void ApplyZoom()
         {
             CaptureBaseMetricsIfNeeded();
-            if (baseFont == null)
+            if (_baseFont == null)
             {
                 return;
             }
 
-            float newSize = Math.Max(1f, baseFont.Size * zoomFactor);
+            float newSize = Math.Max(1f, _baseFont.Size * _zoomFactor);
             Font oldFont = this.Font;
-            Font newFont = new Font(baseFont.FontFamily, newSize, baseFont.Style);
+            Font newFont = new Font(_baseFont.FontFamily, newSize, _baseFont.Style);
 
             this.Font = newFont;
             this.DefaultCellStyle.Font = newFont;
             this.ColumnHeadersDefaultCellStyle.Font = newFont;
             this.RowHeadersDefaultCellStyle.Font = newFont;
 
-            if (oldFont != baseFont)
+            if (oldFont != _baseFont)
             {
                 oldFont.Dispose();
             }
 
-            int newRowHeight = Math.Max(this.RowTemplate.MinimumHeight, (int)Math.Round(baseRowHeight * zoomFactor));
+            int newRowHeight = Math.Max(this.RowTemplate.MinimumHeight, (int)Math.Round(_baseRowHeight * _zoomFactor));
             this.RowTemplate.Height = newRowHeight;
             foreach (DataGridViewRow row in this.Rows)
             {
                 row.Height = newRowHeight;
             }
 
-            this.ColumnHeadersHeight = Math.Max(4, (int)Math.Round(baseColumnHeadersHeight * zoomFactor));
+            this.ColumnHeadersHeight = Math.Max(4, (int)Math.Round(_baseColumnHeadersHeight * _zoomFactor));
 
             this.Invalidate();
         }
@@ -189,7 +189,7 @@ namespace StandardTemplate
                 return;
             }
 
-            if (Math.Abs(zoomFactor - 1.0f) < 0.0001f)
+            if (Math.Abs(_zoomFactor - 1.0f) < 0.0001f)
             {
                 // 等倍時は標準描画のほうがOSのテーマに沿った見た目になるので任せる
                 return;
@@ -199,7 +199,7 @@ namespace StandardTemplate
             e.Paint(e.ClipBounds, DataGridViewPaintParts.Border);
 
             Boolean isChecked = ToCheckBoxChecked(e.Value);
-            int size = Math.Max(4, (int)Math.Round(BaseCheckBoxSize * zoomFactor));
+            int size = Math.Max(4, (int)Math.Round(_baseCheckBoxSize * _zoomFactor));
             Rectangle box = new Rectangle(
                 e.CellBounds.X + (e.CellBounds.Width - size) / 2,
                 e.CellBounds.Y + (e.CellBounds.Height - size) / 2,
@@ -236,18 +236,18 @@ namespace StandardTemplate
         // 複数セルへの変更をまとめて1つのUndo単位にしたい処理の前後で呼ぶ
         public void BeginUndoBatch()
         {
-            pendingBatch = new List<CellChange>();
+            _pendingBatch = new List<CellChange>();
         }
 
         public void EndUndoBatch()
         {
-            if (pendingBatch == null)
+            if (_pendingBatch == null)
             {
                 return;
             }
 
-            List<CellChange> batch = pendingBatch;
-            pendingBatch = null;
+            List<CellChange> batch = _pendingBatch;
+            _pendingBatch = null;
 
             if (batch.Count > 0)
             {
@@ -259,43 +259,43 @@ namespace StandardTemplate
         // 誤って元に戻せてしまわないようにしたい場面で呼ぶ)
         public void ClearUndoHistory()
         {
-            undoStack.Clear();
-            redoStack.Clear();
+            _undoStack.Clear();
+            _redoStack.Clear();
             RebuildValueCache();
         }
 
         public Boolean CanUndo
         {
-            get { return undoStack.Count > 0; }
+            get { return _undoStack.Count > 0; }
         }
 
         public Boolean CanRedo
         {
-            get { return redoStack.Count > 0; }
+            get { return _redoStack.Count > 0; }
         }
 
         public void Undo()
         {
-            if (undoStack.Count == 0)
+            if (_undoStack.Count == 0)
             {
                 return;
             }
 
-            List<CellChange> changes = undoStack.Pop();
+            List<CellChange> changes = _undoStack.Pop();
             ApplyChanges(changes, useOldValue: true);
-            redoStack.Push(changes);
+            _redoStack.Push(changes);
         }
 
         public void Redo()
         {
-            if (redoStack.Count == 0)
+            if (_redoStack.Count == 0)
             {
                 return;
             }
 
-            List<CellChange> changes = redoStack.Pop();
+            List<CellChange> changes = _redoStack.Pop();
             ApplyChanges(changes, useOldValue: false);
-            undoStack.Push(changes);
+            _undoStack.Push(changes);
         }
 
         protected override Boolean ProcessCmdKey(ref Message msg, Keys keyData)
@@ -322,7 +322,7 @@ namespace StandardTemplate
 
         private void ApplyChanges(List<CellChange> changes, Boolean useOldValue)
         {
-            isApplyingHistory = true;
+            _isApplyingHistory = true;
             try
             {
                 foreach (CellChange change in changes)
@@ -335,25 +335,25 @@ namespace StandardTemplate
 
                     Object value = useOldValue ? change.OldValue : change.NewValue;
                     this.Rows[change.RowIndex].Cells[change.ColumnIndex].Value = value;
-                    valueCache[MakeKey(change.RowIndex, change.ColumnIndex)] = value;
+                    _valueCache[MakeKey(change.RowIndex, change.ColumnIndex)] = value;
                 }
             }
             finally
             {
-                isApplyingHistory = false;
+                _isApplyingHistory = false;
             }
         }
 
         private void PushUndo(List<CellChange> changes)
         {
-            undoStack.Push(changes);
+            _undoStack.Push(changes);
             // 新しい変更が入ったら、それより後のRedo履歴は辻褄が合わなくなるので破棄する
-            redoStack.Clear();
+            _redoStack.Clear();
         }
 
         private void DataGridViewEx_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
-            if (!EnableUndoRedo || isApplyingHistory)
+            if (!EnableUndoRedo || _isApplyingHistory)
             {
                 return;
             }
@@ -365,10 +365,10 @@ namespace StandardTemplate
 
             long key = MakeKey(e.RowIndex, e.ColumnIndex);
             Object oldValue;
-            valueCache.TryGetValue(key, out oldValue);
+            _valueCache.TryGetValue(key, out oldValue);
             Object newValue = this.Rows[e.RowIndex].Cells[e.ColumnIndex].Value;
 
-            valueCache[key] = newValue;
+            _valueCache[key] = newValue;
 
             if (Object.Equals(oldValue, newValue))
             {
@@ -383,9 +383,9 @@ namespace StandardTemplate
                 NewValue = newValue
             };
 
-            if (pendingBatch != null)
+            if (_pendingBatch != null)
             {
-                pendingBatch.Add(change);
+                _pendingBatch.Add(change);
             }
             else
             {
@@ -400,7 +400,7 @@ namespace StandardTemplate
             {
                 for (int c = 0; c < this.Columns.Count; c++)
                 {
-                    valueCache[MakeKey(r, c)] = null;
+                    _valueCache[MakeKey(r, c)] = null;
                 }
             }
         }
@@ -410,13 +410,13 @@ namespace StandardTemplate
             // 行が消えると後続行のインデックスが詰まり、キャッシュも既存のUndo/Redo履歴が
             // 指すインデックスも意味を失う。安全のため両方作り直す(履歴はクリアのみ)
             RebuildValueCache();
-            undoStack.Clear();
-            redoStack.Clear();
+            _undoStack.Clear();
+            _redoStack.Clear();
         }
 
         private void RebuildValueCache()
         {
-            valueCache.Clear();
+            _valueCache.Clear();
             for (int r = 0; r < this.Rows.Count; r++)
             {
                 if (this.Rows[r].IsNewRow)
@@ -426,7 +426,7 @@ namespace StandardTemplate
 
                 for (int c = 0; c < this.Columns.Count; c++)
                 {
-                    valueCache[MakeKey(r, c)] = this.Rows[r].Cells[c].Value;
+                    _valueCache[MakeKey(r, c)] = this.Rows[r].Cells[c].Value;
                 }
             }
         }

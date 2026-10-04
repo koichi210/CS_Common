@@ -27,31 +27,31 @@ namespace StandardTemplate.Tests
         [TestMethod]
         public void GetFilePathType_コロンを含めばWindowsフルパス扱い()
         {
-            Assert.AreEqual(StcUtils.FILE_PATH_TYPE.WINDOWS_FULLPATH, util.GetFilePathType(@"C:\work\a.txt"));
+            Assert.AreEqual(StcUtils.FilePathType.WindowsFullPath, util.GetFilePathType(@"C:\work\a.txt"));
         }
 
         [TestMethod]
         public void GetFilePathType_スラッシュ2連はPerforceパス扱い()
         {
-            Assert.AreEqual(StcUtils.FILE_PATH_TYPE.PERFORCE_PATH, util.GetFilePathType("//depot/main/a.txt"));
+            Assert.AreEqual(StcUtils.FilePathType.PerforcePath, util.GetFilePathType("//depot/main/a.txt"));
         }
 
         [TestMethod]
         public void GetFilePathType_スラッシュ区切りはLinuxパス扱い()
         {
-            Assert.AreEqual(StcUtils.FILE_PATH_TYPE.LINUX_PATH, util.GetFilePathType("home/user/a.txt"));
+            Assert.AreEqual(StcUtils.FilePathType.LinuxPath, util.GetFilePathType("home/user/a.txt"));
         }
 
         [TestMethod]
         public void GetFilePathType_円マーク区切りはWindowsパス扱い()
         {
-            Assert.AreEqual(StcUtils.FILE_PATH_TYPE.WINDOWS_PATH, util.GetFilePathType(@"work\a.txt"));
+            Assert.AreEqual(StcUtils.FilePathType.WindowsPath, util.GetFilePathType(@"work\a.txt"));
         }
 
         [TestMethod]
-        public void GetFilePathType_区切り文字が無ければOTHER()
+        public void GetFilePathType_区切り文字が無ければOther()
         {
-            Assert.AreEqual(StcUtils.FILE_PATH_TYPE.OTHER, util.GetFilePathType("a.txt"));
+            Assert.AreEqual(StcUtils.FilePathType.Other, util.GetFilePathType("a.txt"));
         }
 
         // --- 性質ベースのテスト ---------------------------------------------

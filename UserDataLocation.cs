@@ -19,15 +19,14 @@ namespace StandardTemplate
     public static class UserDataLocation
     {
         // exeと同じフォルダに置く、ポインタファイルの名前
-        private const String PointerFileName = "DataFolder.txt";
+        private const String _pointerFileName = "DataFolder.txt";
 
         // appNameごとのユーザーデータフォルダを取得する(無ければ作成する)。
         // ポインタファイルが無い/中身が無効な場合は、既定の場所(%LOCALAPPDATA%\<appName>\)を使い、
         // ポインタファイルを自動的に作り直す(=ポインタファイルだけ消えても次回起動で自己修復する)
         public static String GetUserDataFolder(String appName)
         {
-            String exeDir = Path.GetDirectoryName(GetHostAssembly().Location);
-            String pointerPath = Path.Combine(exeDir, PointerFileName);
+            String pointerPath = GetPointerFilePath();
 
             String dataFolder = TryReadPointerFile(pointerPath);
 
@@ -59,11 +58,15 @@ namespace StandardTemplate
         // readonlyで既に確定しているため、この呼び出しだけでは今のセッションには反映されない)
         public static void SetUserDataFolder(String appName, String newDataFolder)
         {
-            String exeDir = Path.GetDirectoryName(GetHostAssembly().Location);
-            String pointerPath = Path.Combine(exeDir, PointerFileName);
-
             Directory.CreateDirectory(newDataFolder);
-            WritePointerFile(pointerPath, newDataFolder, appName);
+            WritePointerFile(GetPointerFilePath(), newDataFolder, appName);
+        }
+
+        // exeと同じフォルダに置くポインタファイルのフルパス(Get/Setの両方で同じ計算をしていたため集約した)
+        private static String GetPointerFilePath()
+        {
+            String exeDir = Path.GetDirectoryName(GetHostAssembly().Location);
+            return Path.Combine(exeDir, _pointerFileName);
         }
 
         // ポインタファイルを置く基準アセンブリ。通常はexe自身(GetEntryAssembly)だが、

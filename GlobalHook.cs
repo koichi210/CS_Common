@@ -149,17 +149,12 @@ namespace GlobalHook
         /// <summary>
         /// フックプロシージャのハンドル
         /// </summary>
-        private static System.IntPtr Handle;
+        private static System.IntPtr _handle;
 
         /// <summary>
         /// 入力をキャンセルするかどうかを取得、設定します。
         /// </summary>
-        private static Boolean IsCancel;
-
-        /// <summary>
-        /// 登録イベントのリストを取得、設定します。
-        /// </summary>
-        private static System.Collections.Generic.List<HookHandler> Events;
+        private static Boolean _isCancel;
 
         /// <summary>
         /// フックプロシージャ内でのイベント
@@ -167,9 +162,9 @@ namespace GlobalHook
         private static event HookHandler HookEvent;
 
         /// <summary>
-        /// フックチェーンにインストールするフックプロシージャのイベント
+        /// フックチェーンにインストールするフックプロシージャ(GCに回収されないよう参照を保持しておく)
         /// </summary>
-        private static event NativeMethods.KeyboardHookCallback hookCallback;
+        private static NativeMethods.KeyboardHookCallback _hookCallback;
 
         /// <summary>
         /// フックプロシージャをフックチェーン内にインストールし、キーボードのグローバルフックを開始します。
@@ -185,13 +180,13 @@ namespace GlobalHook
             IsHooking = true;
             IsPaused = false;
 
-            hookCallback = HookProcedure;
+            _hookCallback = HookProcedure;
             System.IntPtr h = System.Runtime.InteropServices.Marshal.GetHINSTANCE(typeof(KeyboardHook).Assembly.GetModules()[0]);
 
             // WH_KEYBOARD_LL = 13;
-            Handle = NativeMethods.SetWindowsHookEx(13, hookCallback, h, 0);
+            _handle = NativeMethods.SetWindowsHookEx(13, _hookCallback, h, 0);
 
-            if (Handle == System.IntPtr.Zero)
+            if (_handle == System.IntPtr.Zero)
             {
                 IsHooking = false;
                 IsPaused = true;
@@ -210,16 +205,16 @@ namespace GlobalHook
                 return;
             }
 
-            if (Handle != System.IntPtr.Zero)
+            if (_handle != System.IntPtr.Zero)
             {
                 IsHooking = false;
                 IsPaused = true;
 
                 ClearEvent();
 
-                NativeMethods.UnhookWindowsHookEx(Handle);
-                Handle = System.IntPtr.Zero;
-                hookCallback -= HookProcedure;
+                NativeMethods.UnhookWindowsHookEx(_handle);
+                _handle = System.IntPtr.Zero;
+                _hookCallback = null;
             }
         }
 
@@ -228,7 +223,7 @@ namespace GlobalHook
         /// </summary>
         public static void Cancel()
         {
-            IsCancel = true;
+            _isCancel = true;
         }
 
         /// <summary>
@@ -243,14 +238,11 @@ namespace GlobalHook
         /// キーボード操作時のイベントを追加します。
         /// </summary>
         /// <param name="hookHandler"></param>
+        // 以前は登録したハンドラをList<HookHandler>にも二重に記録し、ClearEventでそのリストを
+        // 1つずつ外していたが、HookEventに登録されるのはAddEvent経由の分だけなので、
+        // イベント本体だけで管理する(RemoveEventは未登録のハンドラを渡しても何もしない)
         public static void AddEvent(HookHandler hookHandler)
         {
-            if (Events == null)
-            {
-                Events = new System.Collections.Generic.List<HookHandler>();
-            }
-
-            Events.Add(hookHandler);
             HookEvent += hookHandler;
         }
 
@@ -260,13 +252,7 @@ namespace GlobalHook
         /// <param name="hookHandler"></param>
         public static void RemoveEvent(HookHandler hookHandler)
         {
-            if (Events == null)
-            {
-                return;
-            }
-
             HookEvent -= hookHandler;
-            Events.Remove(hookHandler);
         }
 
         /// <summary>
@@ -274,17 +260,7 @@ namespace GlobalHook
         /// </summary>
         public static void ClearEvent()
         {
-            if (Events == null)
-            {
-                return;
-            }
-
-            foreach (HookHandler e in Events)
-            {
-                HookEvent -= e;
-            }
-
-            Events.Clear();
+            HookEvent = null;
         }
 
         /// <summary>
@@ -314,15 +290,15 @@ namespace GlobalHook
                     HookExceptionRelay.Report(ex);
                 }
 
-                if (IsCancel)
+                if (_isCancel)
                 {
-                    IsCancel = false;
+                    _isCancel = false;
 
                     return (System.IntPtr)1;
                 }
             }
 
-            return NativeMethods.CallNextHookEx(Handle, nCode, msg, ref s);
+            return NativeMethods.CallNextHookEx(_handle, nCode, msg, ref s);
         }
 
         /// <summary>
@@ -453,17 +429,12 @@ namespace GlobalHook
         /// <summary>
         /// フックプロシージャのハンドル
         /// </summary>
-        private static System.IntPtr Handle;
+        private static System.IntPtr _handle;
 
         /// <summary>
         /// 入力をキャンセルするかどうかを取得、設定します。
         /// </summary>
-        private static Boolean IsCancel;
-
-        /// <summary>
-        /// 登録イベントのリストを取得、設定します。
-        /// </summary>
-        private static System.Collections.Generic.List<HookHandler> Events;
+        private static Boolean _isCancel;
 
         /// <summary>
         /// フックプロシージャ内でのイベント
@@ -471,9 +442,9 @@ namespace GlobalHook
         private static event HookHandler HookEvent;
 
         /// <summary>
-        /// フックチェーンにインストールするフックプロシージャのイベント
+        /// フックチェーンにインストールするフックプロシージャ(GCに回収されないよう参照を保持しておく)
         /// </summary>
-        private static event NativeMethods.MouseHookCallback hookCallback;
+        private static NativeMethods.MouseHookCallback _hookCallback;
 
         /// <summary>
         /// フックプロシージャをフックチェーン内にインストールし、マウスのグローバルフックを開始します。
@@ -489,13 +460,13 @@ namespace GlobalHook
             IsHooking = true;
             IsPaused = false;
 
-            hookCallback = HookProcedure;
+            _hookCallback = HookProcedure;
             System.IntPtr h = System.Runtime.InteropServices.Marshal.GetHINSTANCE(typeof(MouseHook).Assembly.GetModules()[0]);
 
             // WH_MOUSE_LL = 14
-            Handle = NativeMethods.SetWindowsHookEx(14, hookCallback, h, 0);
+            _handle = NativeMethods.SetWindowsHookEx(14, _hookCallback, h, 0);
 
-            if (Handle == System.IntPtr.Zero)
+            if (_handle == System.IntPtr.Zero)
             {
                 IsHooking = false;
                 IsPaused = true;
@@ -514,16 +485,16 @@ namespace GlobalHook
                 return;
             }
 
-            if (Handle != System.IntPtr.Zero)
+            if (_handle != System.IntPtr.Zero)
             {
                 IsHooking = false;
                 IsPaused = true;
 
                 ClearEvent();
 
-                NativeMethods.UnhookWindowsHookEx(Handle);
-                Handle = System.IntPtr.Zero;
-                hookCallback -= HookProcedure;
+                NativeMethods.UnhookWindowsHookEx(_handle);
+                _handle = System.IntPtr.Zero;
+                _hookCallback = null;
             }
         }
 
@@ -532,7 +503,7 @@ namespace GlobalHook
         /// </summary>
         public static void Cancel()
         {
-            IsCancel = true;
+            _isCancel = true;
         }
 
         /// <summary>
@@ -547,14 +518,11 @@ namespace GlobalHook
         /// マウス操作時のイベントを追加します。
         /// </summary>
         /// <param name="hookHandler"></param>
+        // 以前は登録したハンドラをList<HookHandler>にも二重に記録し、ClearEventでそのリストを
+        // 1つずつ外していたが、HookEventに登録されるのはAddEvent経由の分だけなので、
+        // イベント本体だけで管理する(RemoveEventは未登録のハンドラを渡しても何もしない)
         public static void AddEvent(HookHandler hookHandler)
         {
-            if (Events == null)
-            {
-                Events = new System.Collections.Generic.List<HookHandler>();
-            }
-
-            Events.Add(hookHandler);
             HookEvent += hookHandler;
         }
 
@@ -564,13 +532,7 @@ namespace GlobalHook
         /// <param name="hookHandler"></param>
         public static void RemoveEvent(HookHandler hookHandler)
         {
-            if (Events == null)
-            {
-                return;
-            }
-
             HookEvent -= hookHandler;
-            Events.Remove(hookHandler);
         }
 
         /// <summary>
@@ -578,17 +540,7 @@ namespace GlobalHook
         /// </summary>
         public static void ClearEvent()
         {
-            if (Events == null)
-            {
-                return;
-            }
-
-            foreach (HookHandler e in Events)
-            {
-                HookEvent -= e;
-            }
-
-            Events.Clear();
+            HookEvent = null;
         }
 
         /// <summary>
@@ -619,15 +571,15 @@ namespace GlobalHook
                     HookExceptionRelay.Report(ex);
                 }
 
-                if (IsCancel)
+                if (_isCancel)
                 {
-                    IsCancel = false;
+                    _isCancel = false;
 
                     return (System.IntPtr)1;
                 }
             }
 
-            return NativeMethods.CallNextHookEx(Handle, nCode, msg, ref s);
+            return NativeMethods.CallNextHookEx(_handle, nCode, msg, ref s);
         }
 
         /// <summary>

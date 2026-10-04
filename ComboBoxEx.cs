@@ -17,12 +17,11 @@
 // PathDroppedイベントで、反映後のパスを受け取れる
 // (反映そのものを止めたい場合はイベント内でCancelをtrueにする)。
 using System;
-using System.IO;
 using System.Windows.Forms;
 
 namespace StandardTemplate
 {
-    // PathDroppedEventArgsは[[_Common/PathDroppedEventArgs.cs]]で定義(TextBoxExと共有のため分離)
+    // PathDroppedEventArgs/PathDropResolverは[[_Common/PathDroppedEventArgs.cs]]で定義(TextBoxExと共有のため分離)
 
     public class ComboBoxEx : ComboBox
     {
@@ -60,7 +59,7 @@ namespace StandardTemplate
                 return;
             }
 
-            String path = ResolvePath(paths[0]);
+            String path = PathDropResolver.Resolve(paths[0], FolderPathOnly);
 
             PathDroppedEventArgs args = new PathDroppedEventArgs(path);
             PathDropped?.Invoke(this, args);
@@ -70,28 +69,6 @@ namespace StandardTemplate
             }
 
             this.Text = path;
-        }
-
-        // FolderPathOnly指定に応じて、ドロップされたパスをそのまま使うか
-        // 親フォルダのパスに変換するかを決める
-        private String ResolvePath(String droppedPath)
-        {
-            if (!FolderPathOnly)
-            {
-                return droppedPath;
-            }
-
-            if (Directory.Exists(droppedPath))
-            {
-                return droppedPath;
-            }
-
-            if (File.Exists(droppedPath))
-            {
-                return Path.GetDirectoryName(droppedPath) ?? droppedPath;
-            }
-
-            return droppedPath;
         }
     }
 }

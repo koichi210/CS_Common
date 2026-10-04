@@ -23,7 +23,7 @@ namespace StandardTemplate.Wpf
         private const int WM_SYSCOMMAND = 0x112;
 
         // DataFolderMenuと同じID(16の倍数かつ0xF000未満)
-        private const int SysMenuId_ChangeDataFolder = 0x1000;
+        private const int _sysMenuIdChangeDataFolder = 0x1000;
 
         public static void Attach(Window targetWindow, Action onChangeDataFolder)
         {
@@ -32,11 +32,11 @@ namespace StandardTemplate.Wpf
                 IntPtr hWnd = new WindowInteropHelper(targetWindow).Handle;
                 IntPtr systemMenu = GetSystemMenu(hWnd, false);
                 AppendMenu(systemMenu, MF_SEPARATOR, UIntPtr.Zero, String.Empty);
-                AppendMenu(systemMenu, MF_STRING, (UIntPtr)SysMenuId_ChangeDataFolder, "データ保存先を変更(&D)...");
+                AppendMenu(systemMenu, MF_STRING, (UIntPtr)_sysMenuIdChangeDataFolder, "データ保存先を変更(&D)...");
 
                 HwndSource.FromHwnd(hWnd).AddHook((IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref Boolean handled) =>
                 {
-                    if (msg == WM_SYSCOMMAND && (wParam.ToInt64() & 0xFFF0) == SysMenuId_ChangeDataFolder)
+                    if (msg == WM_SYSCOMMAND && (wParam.ToInt64() & 0xFFF0) == _sysMenuIdChangeDataFolder)
                     {
                         handled = true;
                         onChangeDataFolder();
