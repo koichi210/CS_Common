@@ -180,11 +180,32 @@ namespace InputSimulation
                 // ABSOLUTE = 0x8000
                 mouseFlags |= 0x8000;
 
-                x *= (65535 / System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width);
-                y *= (65535 / System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height);
+                x = ToAbsoluteCoordinate(x, System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width);
+                y = ToAbsoluteCoordinate(y, System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height);
             }
 
             AddMouseInput(ref inputs, mouseFlags, data, x, y, 0, 0);
+        }
+
+        /// <summary>
+        /// 画面上のピクセル座標を、SendInputの絶対座標(0～65535に正規化した値)へ換算します。
+        /// </summary>
+        /// <param name="pixel">ピクセル座標</param>
+        /// <param name="screenSize">画面の幅または高さ(ピクセル)</param>
+        /// <returns>正規化した座標</returns>
+        public static int ToAbsoluteCoordinate(int pixel, int screenSize)
+        {
+            // Windowsは正規化座標nを「n * 画面サイズ / 65536 (切り捨て)」でピクセルに戻すため、
+            // 戻した値が元のピクセルになる最小のn(= pixel * 65536 / 画面サイズ の切り上げ)を求める。
+            // 以前は「pixel * (65535 / 画面サイズ)」で、先に割り算の端数を捨てていたため、
+            // 画面の右端・下端に近いほどずれていた(幅1920なら右端で約8px)
+            if (screenSize <= 0)
+            {
+                return 0;
+            }
+
+            long normalized = ((long)pixel * 65536 + screenSize - 1) / screenSize;
+            return (int)System.Math.Max(0, System.Math.Min(65535, normalized));
         }
 
         /// <summary>
