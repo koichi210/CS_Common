@@ -65,10 +65,7 @@ namespace StandardTemplate
         // exeと同じフォルダに置くポインタファイルのフルパス(Get/Setの両方で同じ計算をしていたため集約した)
         private static String GetPointerFilePath()
         {
-            // .NETの単一ファイルexe(PublishSingleFile)ではAssembly.Locationが空文字になるため、
-            // その場合はexeのあるフォルダ(AppDomainのBaseDirectory)で代用する
-            String location = GetHostAssembly().Location;
-            String exeDir = String.IsNullOrEmpty(location) ? AppDomain.CurrentDomain.BaseDirectory : Path.GetDirectoryName(location);
+            String exeDir = Path.GetDirectoryName(GetHostAssembly().Location);
             return Path.Combine(exeDir, _pointerFileName);
         }
 
