@@ -88,7 +88,13 @@ namespace StandardTemplate.Wpf
 
             JsonSaveRestore.DeleteMigratedXml(originalFileName, saveFileName, initialDirectory);
 
-            UpdateProfileList(profileCtrl, profileExtensions, Path.GetFileName(saveFileName), initialDirectory);
+            // サブフォルダに保存した場合も一覧の名前(相対パス)で選び直す。一覧の外に保存した場合は、
+            // 一覧も今の選択(=画面の内容)もそのままにする(JsonSaveRestore.SaveProfileWithDialogと同じ)
+            String profileName = JsonSaveRestore.ToProfileName(saveFileName, initialDirectory);
+            if (profileName != null)
+            {
+                UpdateProfileList(profileCtrl, profileExtensions, profileName, initialDirectory);
+            }
             MessageBox.Show(successMessage + Environment.NewLine + saveFileName);
             return saveFileName;
         }

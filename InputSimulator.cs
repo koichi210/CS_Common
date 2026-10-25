@@ -177,11 +177,15 @@ namespace InputSimulation
 
             if (absolute)
             {
-                // ABSOLUTE = 0x8000
-                mouseFlags |= 0x8000;
+                // ABSOLUTE = 0x8000, VIRTUALDESK = 0x4000
+                // 以前はVIRTUALDESK無しでメイン画面(PrimaryScreen)基準に換算していたため、
+                // サブモニタ上の座標(メイン画面の外・マイナス座標)が画面端に寄せられていた。
+                // 仮想スクリーン(全モニタを含む領域)の左上を原点にして換算する
+                mouseFlags |= 0x8000 | 0x4000;
 
-                x = ToAbsoluteCoordinate(x, System.Windows.Forms.Screen.PrimaryScreen.Bounds.Width);
-                y = ToAbsoluteCoordinate(y, System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height);
+                System.Drawing.Rectangle virtualScreen = System.Windows.Forms.SystemInformation.VirtualScreen;
+                x = ToAbsoluteCoordinate(x - virtualScreen.Left, virtualScreen.Width);
+                y = ToAbsoluteCoordinate(y - virtualScreen.Top, virtualScreen.Height);
             }
 
             AddMouseInput(ref inputs, mouseFlags, data, x, y, 0, 0);

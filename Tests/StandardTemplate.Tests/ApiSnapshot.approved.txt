@@ -47,6 +47,7 @@ TYPE public static class StandardTemplate.JsonFileStorage
     METHOD public static Void Save<T>(String filePath, T data)
 
 TYPE internal static class StandardTemplate.JsonSaveRestore
+    METHOD internal static String ToProfileName(String saveFileName, String directoryPath)
     METHOD internal static Void DeleteMigratedXml(String originalFileName, String saveFileName, String initialDirectory)
     METHOD public static Boolean Load(StcSaveRestore saveRestore, String filePath)
     METHOD public static Boolean LoadWithMigration(StcSaveRestore saveRestore, String jsonPath, String xmlPath, Func<String, Boolean> loadXml)
@@ -221,4 +222,4 @@ TYPE public enum StandardTemplate.StcUtils+FilePathType
     ENUM   WindowsFullPath = 0
     ENUM   WindowsPath = 3
 
-# total: 19 types / 181 members
+# total: 19 types / 182 members

@@ -48,9 +48,29 @@ namespace StandardTemplate
             // 拡張子がxml->jsonへ切り替わっていたら、保存が成功した後で旧xmlを削除する
             DeleteMigratedXml(originalFileName, saveFileName, initialDirectory);
 
-            utils.UpdateProfileList(profileCtrl, profileExtensions, Path.GetFileName(saveFileName), initialDirectory);
+            // 一覧の外に保存した場合は、一覧も今の選択(=画面の内容)もそのままにする
+            String profileName = ToProfileName(saveFileName, initialDirectory);
+            if (profileName != null)
+            {
+                utils.UpdateProfileList(profileCtrl, profileExtensions, profileName, initialDirectory);
+            }
             MessageBox.Show(successMessage + Environment.NewLine + saveFileName);
             return saveFileName;
+        }
+
+        // 保存したファイルのパスを、プロファイル一覧(UpdateProfileList)に並ぶ名前(directoryPathからの相対パス)に直す。
+        // 以前はPath.GetFileNameで選び直していたため、サブフォルダや別の場所に保存すると一覧に見つからず、
+        // 先頭のプロファイルが選ばれて読み込まれ、画面が別のプロファイルに切り替わっていた。
+        // directoryPathの外に保存した場合は一覧に載らないのでnullを返す(directoryPathが空ならカレントフォルダ)
+        internal static String ToProfileName(String saveFileName, String directoryPath)
+        {
+            String folder = Path.GetFullPath((directoryPath != String.Empty) ? directoryPath : Directory.GetCurrentDirectory()).TrimEnd('\\') + "\\";
+            String fullPath = Path.GetFullPath(saveFileName);
+            if (!fullPath.StartsWith(folder, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+            return fullPath.Substring(folder.Length);
         }
 
         // internal: テスト(StandardTemplate.Tests)から直接呼べるようにするため
@@ -64,8 +84,9 @@ namespace StandardTemplate
 
             String oldPath = (initialDirectory != String.Empty) ? Path.Combine(initialDirectory, originalFileName) : originalFileName;
 
-            // 念のため、拡張子違いの同名ファイルであることを確認してから消す
-            if (!String.Equals(Path.GetFileNameWithoutExtension(oldPath), Path.GetFileNameWithoutExtension(saveFileName), StringComparison.OrdinalIgnoreCase))
+            // 念のため、同じフォルダにある拡張子違いの同名ファイルであることを確認してから消す
+            // (ファイル名だけで比べていた頃は、別のフォルダへ同名で保存しても元のxmlが消えていた)
+            if (!String.Equals(Path.ChangeExtension(Path.GetFullPath(oldPath), null), Path.ChangeExtension(Path.GetFullPath(saveFileName), null), StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
