@@ -139,6 +139,11 @@ namespace InputSimulation
         private const int KEYEVENTF_UNICODE = 0x0004;
 
         /// <summary>
+        /// Win32のKEYEVENTF_EXTENDEDKEY(スキャンコードの前にE0が付く拡張キーとして入力する)
+        /// </summary>
+        private const int KEYEVENTF_EXTENDEDKEY = 0x0001;
+
+        /// <summary>
         /// マウス入力のイベントを追加します。
         /// </summary>
         /// <param name="inputs">入力イベントのリスト</param>
@@ -263,11 +268,53 @@ namespace InputSimulation
         /// <param name="key">入力するキー</param>
         public static void AddKeyboardInput(ref System.Collections.Generic.List<Input> inputs, KeyboardStroke flags, System.Windows.Forms.Keys key)
         {
-            int keyboardFlags = (int)flags | KEYEVENTF_UNICODE;
+            // 以前は仮想キーを入れたままKEYEVENTF_UNICODEも立てていたが、Win32の仕様では
+            // UNICODEは「wVk=0・wScanに文字」で使うもので、仮想キーで送るときは付けない
+            // (付けたままだとAlt+F4などの組み合わせが届かないことがある)。
+            // 矢印キーなどの拡張キーはEXTENDEDKEYを付けないとテンキー側のキーとして扱われる
+            int keyboardFlags = (int)flags;
+            if (IsExtendedKey(key))
+            {
+                keyboardFlags |= KEYEVENTF_EXTENDEDKEY;
+            }
             short virtualKey = (short)key;
             short scanCode = (short)NativeMethods.MapVirtualKey(virtualKey, 0);
 
             AddKeyboardInput(ref inputs, keyboardFlags, virtualKey, scanCode, 0, 0);
+        }
+
+        /// <summary>
+        /// 拡張キー(KEYEVENTF_EXTENDEDKEYを付けて送るキー)かどうかを返します。
+        /// </summary>
+        /// <param name="key">キー</param>
+        /// <returns>拡張キーなら true</returns>
+        private static System.Boolean IsExtendedKey(System.Windows.Forms.Keys key)
+        {
+            switch (key & System.Windows.Forms.Keys.KeyCode)
+            {
+                case System.Windows.Forms.Keys.Left:
+                case System.Windows.Forms.Keys.Right:
+                case System.Windows.Forms.Keys.Up:
+                case System.Windows.Forms.Keys.Down:
+                case System.Windows.Forms.Keys.Insert:
+                case System.Windows.Forms.Keys.Delete:
+                case System.Windows.Forms.Keys.Home:
+                case System.Windows.Forms.Keys.End:
+                case System.Windows.Forms.Keys.PageUp:
+                case System.Windows.Forms.Keys.PageDown:
+                case System.Windows.Forms.Keys.RControlKey:
+                case System.Windows.Forms.Keys.RMenu:
+                case System.Windows.Forms.Keys.LWin:
+                case System.Windows.Forms.Keys.RWin:
+                case System.Windows.Forms.Keys.Apps:
+                case System.Windows.Forms.Keys.NumLock:
+                case System.Windows.Forms.Keys.Divide:
+                case System.Windows.Forms.Keys.PrintScreen:
+                case System.Windows.Forms.Keys.Cancel:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>
