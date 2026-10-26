@@ -69,8 +69,11 @@ namespace StandardTemplate
         }
 
         // 保存先を選び直し、exe直下のポインタファイル(DataFolder.txt)を書き換える。
-        // 実行中のCurrentFolderはその場では切り替えず、変更は次回起動時から反映する
-        public static void ChangeDataFolder(String appName, String currentFolder, Action<String, String> migrateFiles)
+        // onFolderChangedを渡すと、完了ダイアログをOKで閉じた後に新しい保存先を引数に呼ばれるので、
+        // そこで_userDataFolderを差し替えてプロファイルを読み直す(再起動不要)。
+        // 渡さない場合は従来通り、変更は次回起動時から反映する
+        public static void ChangeDataFolder(String appName, String currentFolder, Action<String, String> migrateFiles,
+            Action<String> onFolderChanged = null)
         {
             // フォルダ選択ダイアログの実装は[[_Common/DataFolderChooser.cs]]に集約してある
             String selectedFolder = DataFolderChooser.ChooseFolder(
@@ -96,13 +99,22 @@ namespace StandardTemplate
 
             UserDataLocation.SetUserDataFolder(appName, selectedFolder);
 
+            String notice = (onFolderChanged != null)
+                ? "OKを押すと、新しい保存先のプロファイルを読み込むよ"
+                : "今のセッションはこれまで通り" + Environment.NewLine + currentFolder + Environment.NewLine
+                    + "を使うよ。新しい保存先は次回起動時から反映されるよ";
+
             MessageBox.Show(
                 "保存先を変更したよ" + Environment.NewLine + selectedFolder + Environment.NewLine + Environment.NewLine
-                    + "今のセッションはこれまで通り" + Environment.NewLine + currentFolder + Environment.NewLine
-                    + "を使うよ。新しい保存先は次回起動時から反映されるよ",
+                    + notice,
                 appName + " - データ保存先の変更",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
+
+            if (onFolderChanged != null)
+            {
+                onFolderChanged(selectedFolder);
+            }
         }
 
         // 旧フォルダのプロファイル(*.xml / *.json)を新フォルダへ移す。
