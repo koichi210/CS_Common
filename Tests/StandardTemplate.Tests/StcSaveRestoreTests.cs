@@ -354,6 +354,24 @@ namespace StandardTemplate.Tests
         }
 
         [TestMethod]
+        public void SecureCtrlのパスワードがGenericProfileで保存して戻せる()
+        {
+            TextBox password = Track(new TextBox());
+            var profile = new TestProfile();
+            profile.RegisterSecureCtrl("Name", "Password", password);
+
+            password.Text = "p@ssw0rd";
+            GenericProfile saved = profile.BuildGenericProfile();
+
+            Assert.IsFalse(saved.Secrets["Name|Password"].Contains("p@ssw0rd"), "平文では保存しない");
+
+            password.Text = "書き換えてしまった値";
+            profile.ApplyGenericProfile(saved);
+
+            Assert.AreEqual("p@ssw0rd", password.Text);
+        }
+
+        [TestMethod]
         public void 旧キーのGenericProfileもLegacyAttrValue指定で読み込める()
         {
             TextBox textBox = Track(new TextBox());

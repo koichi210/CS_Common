@@ -110,7 +110,8 @@ namespace StandardTemplate
         {
             int current;
             int.TryParse(this.Text, out current);
-            int next = Math.Max(1, (current <= 0 ? 1 : current) + delta);
+            // 空欄・数値でない・0以下の時は、↑でも↓でも1にする
+            int next = (current <= 0) ? 1 : Math.Max(1, current + delta);
 
             this.Text = next.ToString();
             this.SelectionStart = this.Text.Length;

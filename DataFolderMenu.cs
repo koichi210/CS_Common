@@ -97,7 +97,26 @@ namespace StandardTemplate
                 migrateFiles(currentFolder, selectedFolder);
             }
 
-            UserDataLocation.SetUserDataFolder(appName, selectedFolder);
+            try
+            {
+                UserDataLocation.SetUserDataFolder(appName, selectedFolder);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                // exeが書き込み禁止の場所にあるなどで案内板を書き換えられなかった時は、
+                // 移したファイルを元の保存先へ戻す(次回起動でプロファイルが見えなくなるのを防ぐ)
+                if (migrateFiles != null)
+                {
+                    migrateFiles(selectedFolder, currentFolder);
+                }
+
+                MessageBox.Show(
+                    "保存先を変更できなかったよ" + Environment.NewLine + ex.Message,
+                    appName + " - データ保存先の変更",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
 
             String notice = (onFolderChanged != null)
                 ? "OKを押すと、新しい保存先のプロファイルを読み込むよ"

@@ -38,13 +38,18 @@ namespace StandardTemplate
 
                 Directory.CreateDirectory(dataFolder);
 
-                // exeが書き込み禁止の場所(Program Files等)にあっても起動できるよう、案内板の作成失敗は無視する
-                try
+                // 保存先のドライブが一時的に使えない(Googleドライブ未マウント・ネットワーク/USB未接続など)だけの時は、
+                // 今回だけ既定の場所を使い、利用者が指定した保存先を案内板から消さない
+                if (!IsPointerFolderTemporarilyMissing(pointerPath))
                 {
-                    WritePointerFile(pointerPath, dataFolder, appName);
-                }
-                catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-                {
+                    // exeが書き込み禁止の場所(Program Files等)にあっても起動できるよう、案内板の作成失敗は無視する
+                    try
+                    {
+                        WritePointerFile(pointerPath, dataFolder, appName);
+                    }
+                    catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+                    {
+                    }
                 }
             }
 
@@ -108,6 +113,33 @@ namespace StandardTemplate
             }
 
             return candidate;
+        }
+
+        // 案内板の1行目に有効なパスの書式で保存先が書いてあるが、そのフォルダが今は実在しない場合にtrue
+        private static Boolean IsPointerFolderTemporarilyMissing(String pointerPath)
+        {
+            try
+            {
+                if (!File.Exists(pointerPath))
+                {
+                    return false;
+                }
+
+                String[] lines = File.ReadAllLines(pointerPath);
+                if (lines.Length == 0)
+                {
+                    return false;
+                }
+
+                String candidate = lines[0].Trim();
+                return !String.IsNullOrEmpty(candidate)
+                    && candidate.IndexOfAny(Path.GetInvalidPathChars()) < 0
+                    && Path.IsPathRooted(candidate);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is ArgumentException)
+            {
+                return false;
+            }
         }
 
         private static void WritePointerFile(String pointerPath, String dataFolder, String appName)

@@ -242,8 +242,8 @@ namespace StandardTemplate
 
                 if (dlgResult == DialogResult.Yes)
                 {
-                    // 読み取り専用属性を解除する
-                    fi.Attributes = FileAttributes.Normal;
+                    // 読み取り専用属性だけを解除する(隠し・システムなど他の属性は残す)
+                    fi.Attributes &= ~FileAttributes.ReadOnly;
                     return true;
                 }
             }
@@ -292,6 +292,10 @@ namespace StandardTemplate
         {
             int digitCount = defaultString.Length;  // 桁数
 
+            // 負の値はSubstringで例外になるため、0(先頭/残り全部)に丸める
+            startIdx = Math.Max(0, startIdx);
+            length = Math.Max(0, length);
+
             // StartIdxを設定
             if (srcString.Length < startIdx)
             {
@@ -332,17 +336,20 @@ namespace StandardTemplate
         public long GetNumberFromRear(String srcString, String endIdxString, String lengthString, String defaultString = "01")
         {
             // EndIdxを設定
+            // (数字以外・負数など解釈できない入力は未指定として扱う。入力途中の「-」などで例外にしない)
             int endIdx = srcString.Length;
-            if (endIdxString != String.Empty)
+            int endIdxValue;
+            if (int.TryParse(endIdxString, out endIdxValue) && endIdxValue >= 0)
             {
-                endIdx = Math.Min(endIdx, Convert.ToInt32(endIdxString));
+                endIdx = Math.Min(endIdx, endIdxValue);
             }
 
             // Lengthを設定
             int length = endIdx;
-            if (lengthString != String.Empty)
+            int lengthValue;
+            if (int.TryParse(lengthString, out lengthValue) && lengthValue >= 0)
             {
-                length = Convert.ToInt32(lengthString);
+                length = lengthValue;
             }
 
             return GetNumberFromRear(srcString, endIdx, length, defaultString);
@@ -658,8 +665,12 @@ namespace StandardTemplate
             }
 
             // コピー
+            // (何も選択していない時にクリップボードを空にしないよう、ListView版と同じく空なら何もしない)
             String targetName = GetSelectName(listBoxCtrl, rootPath);
-            SetClipboardText(targetName);
+            if (!targetName.Equals(String.Empty))
+            {
+                SetClipboardText(targetName);
+            }
         }
 
         // クリップボードは他のアプリが掴んでいる間は開けず、Clipboard.SetTextが例外になる
@@ -778,7 +789,8 @@ namespace StandardTemplate
             int startIdx = 0;
             if (removeString != String.Empty)
             {
-                startIdx = removeString.Length + 1;
+                // 末尾に区切り文字があっても無くても、区切り文字1つ分を足した長さで切り落とす
+                startIdx = removeString.TrimEnd('\\', '/').Length + 1;
             }
             SetComboBoxFromArraySubString(comboCtrl, array, startIdx, "", limitString);
         }
@@ -812,9 +824,14 @@ namespace StandardTemplate
                 {
                     valueName = valueName.Substring(startIdx, length - startIdx);
                 }
-                else
+                else if (startIdx <= valueName.Length)
                 {
                     valueName = valueName.Substring(startIdx);
+                }
+                else
+                {
+                    // 切り落とす長さより短い要素は空にする(Substringの例外を避ける)
+                    valueName = String.Empty;
                 }
 
                 // 文字の絞り込み
@@ -925,7 +942,8 @@ namespace StandardTemplate
         // 数字以外のキーならtrue(KeyPressEventArgs.Handledにそのまま入れて入力を弾く用途)
         public Boolean IsNotNumberKey(KeyPressEventArgs e)
         {
-            return e.KeyChar < '0' || e.KeyChar > '9';
+            // Backspace・Ctrl+C/Vなどの制御文字は弾かない
+            return !Char.IsControl(e.KeyChar) && (e.KeyChar < '0' || e.KeyChar > '9');
         }
 
         public void SetDataGridCell(DataGridView dgv, int rowIdx, int columnIdx, String val)
@@ -1316,7 +1334,7 @@ namespace StandardTemplate
                 }
 
                 // 設定値を読む
-                foreach (XmlElement element in document.DocumentElement)
+                foreach (XmlElement element in document.DocumentElement.ChildNodes.OfType<XmlElement>())
                 {
                     String elementValue = element.InnerText;
                     if (LoadTextCtrl(element, elementValue)) { continue; }
@@ -1357,7 +1375,7 @@ namespace StandardTemplate
         // 属性値が一致する要素を順に返す(isFullMatchがfalseなら部分一致)
         private static IEnumerable<XmlElement> FindElements(XmlDocument document, String attrName, String attrValue, Boolean isFullMatch)
         {
-            foreach (XmlElement element in document.DocumentElement)
+            foreach (XmlElement element in document.DocumentElement.ChildNodes.OfType<XmlElement>())
             {
                 String attribute = element.GetAttribute(attrName);
                 Boolean isMatch = isFullMatch
@@ -1538,7 +1556,7 @@ namespace StandardTemplate
 
         private void LoadSecureCode(XmlDocument document)
         {
-            foreach (XmlElement element in document.DocumentElement)
+            foreach (XmlElement element in document.DocumentElement.ChildNodes.OfType<XmlElement>())
             {
                 String elementValue = element.InnerText;
                 foreach (SecureCtrlDb secureCtrl in _regSecureCtrl)
@@ -1909,8 +1927,17 @@ namespace StandardTemplate
                 profile.Grids[GenericKey(_regDataGridCtrl[i])] = rows;
             }
 
-            // SecureCtrl(暗号化して保存するパスワード等)は現状どのプロジェクトも未使用のため、
-            // JSON汎用プロファイルでは対応していない(必要になったら追加する)
+            // SecureCtrl(暗号化して保存するパスワード等)。鍵・IV・暗号文をBase64にして「:」でつなぐ
+            StcSecure secure = new StcSecure();
+            for (int i = 0; i < _regSecureCtrl.Count; i++)
+            {
+                byte[] desKey;
+                byte[] desIv;
+                byte[] cryptData;
+                secure.Encode(_regSecureCtrl[i].Ctrl.Text, out desKey, out desIv, out cryptData);
+                profile.Secrets[GenericKey(_regSecureCtrl[i])] =
+                    Convert.ToBase64String(desKey) + ":" + Convert.ToBase64String(desIv) + ":" + Convert.ToBase64String(cryptData);
+            }
             return profile;
         }
 
@@ -1980,6 +2007,32 @@ namespace StandardTemplate
                     }
                 }
             }
+
+            ApplySecrets(profile);
+        }
+
+        // BuildGenericProfileで保存したSecureCtrlを復号して反映する。保存が無い/壊れている時は既定値のまま
+        private void ApplySecrets(GenericProfile profile)
+        {
+            StcSecure secure = new StcSecure();
+            for (int i = 0; i < _regSecureCtrl.Count; i++)
+            {
+                String packed;
+                if (profile.Secrets == null || !profile.Secrets.TryGetValue(GenericKey(_regSecureCtrl[i]), out packed))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    String[] parts = packed.Split(':');
+                    _regSecureCtrl[i].Ctrl.Text = secure.Decode(
+                        Convert.FromBase64String(parts[0]), Convert.FromBase64String(parts[1]), Convert.FromBase64String(parts[2]));
+                }
+                catch (Exception ex) when (ex is FormatException || ex is IndexOutOfRangeException || ex is System.Security.Cryptography.CryptographicException)
+                {
+                }
+            }
         }
 
         // GenericProfileのキー(コントロール名由来なので、旧XMLの「Cell_行-列」方式より読める)
@@ -2024,6 +2077,9 @@ namespace StandardTemplate
 
         // DataGridViewの行データ(行×列の文字列)。キーは"AttrName|AttrValue"
         public Dictionary<String, List<List<String>>> Grids { get; set; } = new Dictionary<String, List<List<String>>>();
+
+        // SecureCtrl(パスワード等)の暗号化データ。値は「鍵:IV:暗号文」(各Base64)。キーは"AttrName|AttrValue"
+        public Dictionary<String, String> Secrets { get; set; } = new Dictionary<String, String>();
 
         // 保存キー"AttrName|AttrValue"を作る。WinForms版(StcSaveRestore)とWPF版(WpfSaveRestore)で
         // 同じキーにしないと互いのプロファイルを読めなくなるため、組み立て方をここ1か所にまとめた
@@ -2291,7 +2347,7 @@ namespace StandardTemplate
         {
             if ((fi.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
             {
-                fi.Attributes = FileAttributes.Normal;
+                fi.Attributes &= ~FileAttributes.ReadOnly;
             }
         }
 
@@ -2301,7 +2357,7 @@ namespace StandardTemplate
             //フォルダ属性を変更
             if ((dirInfo.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
             {
-                dirInfo.Attributes = FileAttributes.Normal;
+                dirInfo.Attributes &= ~FileAttributes.ReadOnly;
             }
 
             //フォルダ内のファイル属性を変更
@@ -2383,10 +2439,9 @@ namespace StandardTemplate
         // ファイル削除（読み取り属性解除）
         public Boolean DeleteFileWithRemoveReadonlyAttribute(String deleteFile)
         {
-            RemoveReadonlyAttribute(new FileInfo(deleteFile));
-
             try
             {
+                RemoveReadonlyAttribute(new FileInfo(deleteFile));
                 File.Delete(deleteFile);
                 return true;
             }

@@ -84,7 +84,8 @@ namespace StandardTemplate.Wpf
                 int current;
                 int.TryParse(Text, out current);
                 int delta = (e.Key == Key.Up) ? 1 : -1;
-                Text = Math.Max(1, (current <= 0 ? 1 : current) + delta).ToString();
+                // 空欄・数値でない・0以下の時は、↑でも↓でも1にする
+                Text = ((current <= 0) ? 1 : Math.Max(1, current + delta)).ToString();
                 CaretIndex = Text.Length;
                 e.Handled = true;
                 return;

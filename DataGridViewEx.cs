@@ -395,6 +395,18 @@ namespace StandardTemplate
 
         private void DataGridViewEx_RowsAdded(object sender, DataGridViewRowsAddedEventArgs e)
         {
+            // 途中への行の挿入(Rows.Insert)は、挿入位置より後ろの行のインデックスがずれ、
+            // キャッシュも既存のUndo/Redo履歴が指すインデックスも意味を失う。行の削除と同じく
+            // 両方作り直す(履歴はクリアのみ)。末尾への追加(新規行の手前を含む)は後続の行が無いので影響しない
+            int dataRowCount = this.Rows.Count - (this.AllowUserToAddRows ? 1 : 0);
+            if (e.RowIndex + e.RowCount < dataRowCount)
+            {
+                RebuildValueCache();
+                _undoStack.Clear();
+                _redoStack.Clear();
+                return;
+            }
+
             // 新しい行のセルは初期値nullとしてキャッシュしておく(差分検出の基準点として必要)
             for (int r = e.RowIndex; r < e.RowIndex + e.RowCount; r++)
             {

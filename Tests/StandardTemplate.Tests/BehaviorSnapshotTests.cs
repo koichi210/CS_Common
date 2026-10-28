@@ -116,7 +116,7 @@ namespace StandardTemplate.Tests
             }
 
             r.Section("StcUtils.GetNumberFromRear(String SrcString, int EndIdx, int Length, String DefaultString)");
-            r.Note("StartIdx = 文字数 - EndIdx として計算する。EndIdx が文字数より大きいと負になる。");
+            r.Note("StartIdx = 文字数 - EndIdx として計算する。EndIdx が文字数より大きいと開始位置が負になるが、0(先頭)に丸める。");
             foreach (object[] c in new object[][]
             {
                 new object[] { "abc123", 3, 3, "01" },

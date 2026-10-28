@@ -102,6 +102,41 @@ namespace StandardTemplate.Tests
         }
 
         [TestMethod]
+        public void IsNotNumberKey_BackspaceやCtrlキーは弾かない()
+        {
+            Assert.IsFalse(util.IsNotNumberKey(new System.Windows.Forms.KeyPressEventArgs('5')));
+            Assert.IsTrue(util.IsNotNumberKey(new System.Windows.Forms.KeyPressEventArgs('a')));
+
+            // 以前はBackspace((char)8)やCtrl+C((char)3)も弾いていて、数字欄の文字を消せなかった
+            Assert.IsFalse(util.IsNotNumberKey(new System.Windows.Forms.KeyPressEventArgs((char)8)));
+            Assert.IsFalse(util.IsNotNumberKey(new System.Windows.Forms.KeyPressEventArgs((char)3)));
+        }
+
+        [TestMethod]
+        public void GetNumberFromRear_数字でない入力や負数でも例外にならない()
+        {
+            // 以前はConvert.ToInt32でFormatException、負数はSubstringでArgumentOutOfRangeExceptionだった。
+            // 解釈できない入力は未指定として扱うので、全体から数字を取り出す
+            Assert.AreEqual(123, util.GetNumberFromRear("abc123", "", "", "01"));
+            Assert.AreEqual(123, util.GetNumberFromRear("abc123", "-", "a", "01"));
+            Assert.AreEqual(123, util.GetNumberFromRear("abc123", "-1", "-1", "01"));
+        }
+
+        [TestMethod]
+        public void SetComboBoxFromArray_除去するパスの末尾に区切りがあっても同じ結果になる()
+        {
+            string[] files = { @"D:\ref\a", @"D:\ref\b" };
+            var combo = new System.Windows.Forms.ComboBox();
+
+            util.SetComboBoxFromArray(combo, files, @"D:\ref");
+            CollectionAssert.AreEqual(new[] { "a", "b" }, new System.Collections.ArrayList(combo.Items));
+
+            // 以前は末尾の区切りの分だけ1文字ずれて、先頭の文字が欠けていた
+            util.SetComboBoxFromArray(combo, files, @"D:\ref\");
+            CollectionAssert.AreEqual(new[] { "a", "b" }, new System.Collections.ArrayList(combo.Items));
+        }
+
+        [TestMethod]
         public void 改行コード変換_二度かけても壊れない()
         {
             // 以前は "\n" を無条件に "\r\n" へ置換していたため、すでに CRLF の箇所で
