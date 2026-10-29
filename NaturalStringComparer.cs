@@ -37,16 +37,16 @@ namespace StandardTemplate
             int iy = 0;
             while (ix < x.Length && iy < y.Length)
             {
-                if (Char.IsDigit(x[ix]) && Char.IsDigit(y[iy]))
+                if (IsAsciiDigit(x[ix]) && IsAsciiDigit(y[iy]))
                 {
                     int startX = ix;
-                    while (ix < x.Length && Char.IsDigit(x[ix]))
+                    while (ix < x.Length && IsAsciiDigit(x[ix]))
                     {
                         ix++;
                     }
 
                     int startY = iy;
-                    while (iy < y.Length && Char.IsDigit(y[iy]))
+                    while (iy < y.Length && IsAsciiDigit(y[iy]))
                     {
                         iy++;
                     }
@@ -60,13 +60,13 @@ namespace StandardTemplate
                 else
                 {
                     int startX = ix;
-                    while (ix < x.Length && !Char.IsDigit(x[ix]))
+                    while (ix < x.Length && !IsAsciiDigit(x[ix]))
                     {
                         ix++;
                     }
 
                     int startY = iy;
-                    while (iy < y.Length && !Char.IsDigit(y[iy]))
+                    while (iy < y.Length && !IsAsciiDigit(y[iy]))
                     {
                         iy++;
                     }
@@ -81,6 +81,13 @@ namespace StandardTemplate
 
             // 片方だけ末尾に文字が残っていれば、短い方を前にする(自然な直感に合わせる)
             return (x.Length - ix).CompareTo(y.Length - iy);
+        }
+
+        // Char.IsDigitは全角数字(１２３)など他の文字体系の数字もtrueにするが、先頭の0の除去やCompareOrdinalは
+        // 半角の0〜9前提なので、半角の数字だけを数字として扱う
+        private static Boolean IsAsciiDigit(Char c)
+        {
+            return c >= '0' && c <= '9';
         }
 
         // 数字だけの文字列同士を、桁数ではなく数値として比較する(先頭の0は無視)。

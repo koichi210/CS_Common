@@ -125,7 +125,15 @@ namespace StandardTemplate
         {
             if (File.Exists(jsonPath))
             {
-                return Load(saveRestore, jsonPath);
+                if (Load(saveRestore, jsonPath))
+                {
+                    return true;
+                }
+
+                // JSONが壊れていて読めない時も、画面が前の値のまま残らないよう既定値を適用し直す
+                // (LoadXmlは旧XMLが無くても既定値を適用する。旧XMLが残っていればその値で復旧する)
+                loadXml(xmlPath);
+                return false;
             }
 
             // 旧XMLが無くてもLoadXmlは呼ぶ。StcSaveRestore.LoadXmlFileはファイルの有無に関わらず

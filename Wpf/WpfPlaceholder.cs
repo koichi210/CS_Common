@@ -120,7 +120,10 @@ namespace StandardTemplate.Wpf
                 return;
             }
 
-            AdornerLayer layer = AdornerLayer.GetAdornerLayer(textBox);
+            // Unloaded時点でtextBoxからアドーナー層を引けないことがある。その場合も、アドーナー自身の親の層から
+            // 取り外さないと、再度Loadedされた時にアドーナーが二重に付く
+            AdornerLayer layer = AdornerLayer.GetAdornerLayer(textBox)
+                ?? System.Windows.Media.VisualTreeHelper.GetParent(adorner) as AdornerLayer;
             if (layer != null)
             {
                 layer.Remove(adorner);

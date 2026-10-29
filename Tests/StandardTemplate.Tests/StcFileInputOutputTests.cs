@@ -81,5 +81,43 @@ namespace StandardTemplate.Tests
             byte[] outBytes = File.ReadAllBytes(outPath);
             Assert.AreEqual(content, Encoding.GetEncoding("SHIFT-JIS").GetString(outBytes));
         }
+
+        [TestMethod]
+        public void ChangeStringCodeUtf2Sjis_入力ファイルが存在しなければfalseで出力先を作らない()
+        {
+            string outPath = Path.Combine(tempDirectory, "out.txt");
+
+            Assert.IsFalse(fio.ChangeStringCodeUtf2Sjis(Path.Combine(tempDirectory, "none.txt"), outPath));
+            Assert.IsFalse(File.Exists(outPath), "以前は空ファイルで出力先を上書き・作成していた");
+        }
+
+        [TestMethod]
+        public void DeleteAnyFile_ワイルドカードの拡張子が3文字でも長い拡張子のファイルは消さない()
+        {
+            string xls = Path.Combine(tempDirectory, "a.xls");
+            string xlsx = Path.Combine(tempDirectory, "b.xlsx");
+            File.WriteAllText(xls, "x");
+            File.WriteAllText(xlsx, "x");
+
+            Assert.IsTrue(fio.DeleteAnyFile(Path.Combine(tempDirectory, "*.xls")));
+
+            Assert.IsFalse(File.Exists(xls));
+            Assert.IsTrue(File.Exists(xlsx), "以前は.xlsxも一緒に消えていた(3文字拡張子の旧仕様)");
+        }
+
+        [TestMethod]
+        public void CreateTempFile_指定した拡張子のファイルができる()
+        {
+            string path = fio.CreateTempFile("bat");
+            try
+            {
+                Assert.AreEqual(".bat", Path.GetExtension(path));
+                Assert.IsTrue(File.Exists(path));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
     }
 }

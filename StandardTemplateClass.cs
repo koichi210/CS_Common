@@ -89,7 +89,8 @@ namespace StandardTemplate
         {
             using (Process process = ExecuteProcess(path, arguments, noWindow))
             {
-                process.WaitForExit(); // 処理が終わるまで待つ
+                // UseShellExecute経由では、既存のプロセスに処理を渡した場合などにProcess.Startがnullを返すことがある
+                process?.WaitForExit(); // 処理が終わるまで待つ
             }
         }
 
@@ -188,7 +189,8 @@ namespace StandardTemplate
             if (File.Exists(execPath) ||
                 Directory.Exists(execPath) ||
                 IsExistFileNameInEnvironment(execPath) ||
-                execPath.IndexOf("http") != -1)
+                execPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                execPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
                 ExecuteProcess(execPath, arguments, noWindow);
                 return true;
@@ -811,7 +813,12 @@ namespace StandardTemplate
 
                 // 文字列生成
                 int length;
-                if (!isReverse)
+                if (endDelimiter == String.Empty)
+                {
+                    // 区切り文字の指定なし(IndexOf("")は0、LastIndexOf("")は末尾側を返して結果がずれるため使わない)
+                    length = -1;
+                }
+                else if (!isReverse)
                 {
                     length = valueName.IndexOf(endDelimiter);
                 }
@@ -2142,7 +2149,9 @@ namespace StandardTemplate
                 cryptData = TransformBytes(source, des.CreateEncryptor(desKey, desIv));
             }
 
-            return Encoding.Unicode.GetString(cryptData);
+            // 暗号文をそのままUnicode文字列にすると、XML 1.0で使えない文字(制御文字など)が混ざって
+            // 保存や読込が失敗することがあるため、Base64にする(復号には鍵・IV・暗号文のバイト列を使うので影響しない)
+            return Convert.ToBase64String(cryptData);
         }
 
         // 復号(鍵付き)
@@ -2190,11 +2199,19 @@ namespace StandardTemplate
             String destStr = Path.GetTempFileName();
             if (ext != String.Empty)
             {
-                String srcStr = destStr;
-                destStr = destStr.Replace(".tmp", "." + ext);
-                if (!File.Exists(destStr))
+                // 同じ名前の拡張子付きファイルが既にあると、そのファイルを返して呼び出し側に上書きされてしまうため、
+                // 空いている名前になるまで作り直す。拡張子はパス全体の置換ではなく末尾だけを変える(フォルダ名に".tmp"があっても壊れない)
+                for (int retry = 0; retry < 10; retry++)
                 {
-                    File.Move(srcStr, destStr);
+                    String srcStr = destStr;
+                    destStr = Path.ChangeExtension(srcStr, ext);
+                    if (!File.Exists(destStr))
+                    {
+                        File.Move(srcStr, destStr);
+                        break;
+                    }
+                    File.Delete(srcStr);
+                    destStr = Path.GetTempFileName();
                 }
             }
             return destStr;
@@ -2228,6 +2245,12 @@ namespace StandardTemplate
         // 「書き込み時のエンコード指定(SaveFileがShift_JIS固定)」だけで完了する
         public Boolean ChangeStringCodeUtf2Sjis(String inFileName, String outFileName)
         {
+            if (!_utils.IsExistPath(inFileName))
+            {
+                // ファイルが存在しない(Euc2Sjisと同じく、出力先を空ファイルで上書きしない)
+                return false;
+            }
+
             SaveFile(outFileName, LoadFileWithEncoding(inFileName, Encoding.GetEncoding("utf-8")));
             return true;
         }
@@ -2366,9 +2389,13 @@ namespace StandardTemplate
                 RemoveReadonlyAttribute(fi);
             }
 
-            //サブフォルダの属性も変更
+            //サブフォルダの属性も変更(ジャンクション/シンボリックリンクはリンク先を書き換えないよう辿らない)
             foreach (DirectoryInfo di in dirInfo.GetDirectories())
             {
+                if ((di.Attributes & FileAttributes.ReparsePoint) != 0)
+                {
+                    continue;
+                }
                 RemoveReadonlyAttribute(di);
             }
         }
@@ -2410,6 +2437,12 @@ namespace StandardTemplate
             String dirName = Path.GetDirectoryName(targetName);
             String fileName = Path.GetFileName(targetName);
 
+            // フォルダ指定の無い相対パス("*.log"など)は、カレントフォルダとして扱う
+            if (dirName == String.Empty)
+            {
+                dirName = Directory.GetCurrentDirectory();
+            }
+
             if (fileName.IndexOf("*") == -1)
             {
                 // ワイルドカードの指定が無かった終了
@@ -2424,7 +2457,13 @@ namespace StandardTemplate
 
             // ファイルリストアップ
             Boolean deleteComplete = true;
-            String[] files = Directory.GetFiles(dirName, fileName);
+            // Directory.GetFilesは拡張子が3文字のパターン("*.xls")だと".xlsx"にも一致する旧仕様があるため、
+            // 取得したあとにワイルドカードを正確に照合して絞り込む
+            Regex wildcard = new Regex(
+                "^" + Regex.Escape(fileName).Replace(Regex.Escape("*"), ".*").Replace(Regex.Escape("?"), ".") + "$",
+                RegexOptions.IgnoreCase);
+            String[] files = Directory.GetFiles(dirName, fileName)
+                .Where(f => wildcard.IsMatch(Path.GetFileName(f))).ToArray();
             for (int i = 0; i < files.Length; i++)
             {
                 if (!DeleteFileWithRemoveReadonlyAttribute(files[i]))

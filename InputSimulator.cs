@@ -90,7 +90,8 @@ namespace InputSimulation
         /// </summary>
         // Offset 8固定: ネイティブのINPUT構造体は、共用体側にポインタサイズのメンバ(dwExtraInfo)
         // を含むため、x64では8byte境界に揃えるアラインメントが入りunionはoffset 8から始まる。
-        // x86でも同じくoffset 8に置いておけば(4byte分は未使用の詰め物になるだけで)両OSで安全に動く。
+        // x86(32bit)のネイティブINPUTは共用体がoffset 4から始まり全体が28byteになるため、この定義
+        // (全体32byte)では cbSize が合わずSendInputが失敗する。x64(AnyCPU・Prefer32Bit=false)専用の定義。
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit)]
         public struct Input
         {

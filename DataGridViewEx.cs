@@ -25,6 +25,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace StandardTemplate
@@ -325,7 +326,10 @@ namespace StandardTemplate
             _isApplyingHistory = true;
             try
             {
-                foreach (CellChange change in changes)
+                // 同じセルが1回の操作で2回以上変わっていた時(一括貼り付けなど)、Undoは新しい順に戻さないと
+                // 途中の値で止まってしまう。Redoは古い順に適用する
+                IEnumerable<CellChange> ordered = useOldValue ? Enumerable.Reverse(changes) : changes;
+                foreach (CellChange change in ordered)
                 {
                     if (change.RowIndex < 0 || change.RowIndex >= this.Rows.Count
                         || change.ColumnIndex < 0 || change.ColumnIndex >= this.Columns.Count)
@@ -421,6 +425,16 @@ namespace StandardTemplate
         {
             // 行が消えると後続行のインデックスが詰まり、キャッシュも既存のUndo/Redo履歴が
             // 指すインデックスも意味を失う。安全のため両方作り直す(履歴はクリアのみ)
+            RebuildValueCache();
+            _undoStack.Clear();
+            _redoStack.Clear();
+        }
+
+        protected override void OnSorted(EventArgs e)
+        {
+            base.OnSorted(e);
+
+            // 並べ替えで行と値の対応が変わるため、行の削除と同じくキャッシュを作り直して履歴をクリアする
             RebuildValueCache();
             _undoStack.Clear();
             _redoStack.Clear();

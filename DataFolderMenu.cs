@@ -33,7 +33,7 @@ namespace StandardTemplate
         [DllImport("user32.dll")]
         private static extern IntPtr GetSystemMenu(IntPtr hWnd, Boolean bRevert);
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern Boolean AppendMenu(IntPtr hMenu, uint uFlags, uint uIDNewItem, String lpNewItem);
 
         private const uint MF_SEPARATOR = 0x800;
@@ -159,7 +159,8 @@ namespace StandardTemplate
 
             foreach (String sourcePath in ListProfiles(oldFolder, isExclude))
             {
-                String fileName = Path.GetFileName(sourcePath);
+                // サブフォルダに保存したプロファイルは、サブフォルダの構造を保ったまま移す
+                String fileName = GetRelativePath(oldFolder, sourcePath);
                 String destPath = Path.Combine(newFolder, fileName);
 
                 if (File.Exists(destPath))
@@ -170,6 +171,7 @@ namespace StandardTemplate
 
                 try
                 {
+                    Directory.CreateDirectory(Path.GetDirectoryName(destPath));
                     File.Move(sourcePath, destPath);
                     movedFiles.Add(fileName);
                 }
@@ -196,16 +198,30 @@ namespace StandardTemplate
 
         private static List<String> ListProfiles(String folder, Func<String, Boolean> isExclude)
         {
+            // プロファイル一覧(StcSaveRestore側・WpfProfile)と同じく、サブフォルダの中も対象にする。
+            // 検索パターン"*.xml"は拡張子が3文字のため".xmlx"などにも一致する旧仕様があるので、拡張子は自分で見る
             List<String> files = new List<String>();
-            files.AddRange(Directory.GetFiles(folder, "*.xml"));
-            foreach (String path in Directory.GetFiles(folder, "*.json"))
+            foreach (String path in Directory.GetFiles(folder, "*", SearchOption.AllDirectories))
             {
-                if (isExclude == null || !isExclude(path))
+                String extension = Path.GetExtension(path);
+                Boolean isProfile = extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)
+                    || extension.Equals(".json", StringComparison.OrdinalIgnoreCase);
+                if (isProfile && (isExclude == null || !isExclude(path)))
                 {
                     files.Add(path);
                 }
             }
             return files;
+        }
+
+        // folderからpathまでの相対パスを返す(pathはfolderの配下にある前提)
+        private static String GetRelativePath(String folder, String path)
+        {
+            String prefix = Path.GetFullPath(folder).TrimEnd('\\') + "\\";
+            String fullPath = Path.GetFullPath(path);
+            return fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                ? fullPath.Substring(prefix.Length)
+                : Path.GetFileName(path);
         }
     }
 }

@@ -41,6 +41,15 @@ namespace StandardTemplate.Tests
         }
 
         [TestMethod]
+        public void 全角数字は数字として扱わず通常の文字として比較される()
+        {
+            // 以前は全角数字も数字として扱いつつ、先頭の0の除去は半角の0しか見ないため、
+            // 「第０１話」が「第２話」より後ろに並んでいた
+            Assert.IsTrue(NaturalStringComparer.Instance.Compare("第０１話", "第２話") < 0);
+            Assert.IsTrue(NaturalStringComparer.Instance.Compare("第2話", "第10話") < 0, "半角はこれまで通り数値として比較する");
+        }
+
+        [TestMethod]
         public void nullは前方に並ぶ()
         {
             Assert.IsTrue(NaturalStringComparer.Instance.Compare(null, "a") < 0);
