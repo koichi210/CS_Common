@@ -2,8 +2,8 @@
 // FFEdit(ファイル名変更・移動)とFileArranger(フォルダ振り分け)にまったく同じ実装が
 // 別々に置かれていたため、_Commonへ集約した(bool/Booleanの表記ゆれ以外の差は無かった)。
 //
-// 使い方: 1回の操作を始めるときにIncrementSerialNumberで番号を進め、
-// 操作ごとにAddRestoreItemで「戻すための情報」を積む。元に戻すときは
+// 使い方: 操作ごとにAddRestoreItemで「戻すための情報」を積み(現在の管理番号が付く)、
+// 1回の操作が終わったらIncrementSerialNumberで次の番号へ進める。元に戻すときは
 // DecrementSerialNumberで番号を戻し、HasRestoreItemがtrueの間
 // PopRestoreItemで取り出す(同じ番号の分だけ取り出せる)。
 using System;

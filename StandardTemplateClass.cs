@@ -2901,6 +2901,17 @@ namespace StandardTemplate
         // (Ctrl+PrintScreen="^{PRTSC}"で全画面、Alt+PrintScreen="%{PRTSC}"でアクティブウィンドウ)
         private Boolean SaveWithPrintScreen(String printScreenKey, String pictFileName)
         {
+            // 前回の画像が残っていると、PrintScreenの反映が遅れた時にそれを保存してしまう。
+            // 先に空にして、画像が入るまで待つ(PrintScreenはどのみちクリップボードを書き換える)
+            try
+            {
+                Clipboard.Clear();
+            }
+            catch (ExternalException)
+            {
+                // 他のアプリがクリップボードを掴んでいても、そのまま続ける
+            }
+
             SendKeys.SendWait(printScreenKey);
 
             return SaveClipboard(pictFileName);
@@ -2911,6 +2922,13 @@ namespace StandardTemplate
             try
             {
                 IDataObject d = Clipboard.GetDataObject();
+
+                // PrintScreenの内容がクリップボードへ入るまで、最大2秒ほど待つ
+                for (int retry = 0; retry < 20 && (d == null || !d.GetDataPresent(DataFormats.Bitmap)); retry++)
+                {
+                    Thread.Sleep(100);
+                    d = Clipboard.GetDataObject();
+                }
 
                 //ビットマップデータ形式に関連付けられているデータを取得
                 // (取得できなかった場合はnullになり、Saveで例外→falseを返す。usingはnullでも安全)
@@ -2937,7 +2955,15 @@ namespace StandardTemplate
             // falseを返すようにした(ディスク書き込み失敗・GDI例外等を吸収する)。
             try
             {
-                Screen targetScreen = (TargetWindow != null) ? Screen.FromControl(TargetWindow) : Screen.PrimaryScreen;
+                // TargetWindow(UIスレッドのフォーム)のHandleを別スレッドから読むと、デバッガー接続時などに
+                // クロススレッド例外になるため、UIスレッドで画面を求める
+                Screen targetScreen = Screen.PrimaryScreen;
+                if (TargetWindow != null)
+                {
+                    targetScreen = TargetWindow.InvokeRequired
+                        ? (Screen)TargetWindow.Invoke(new Func<Screen>(() => Screen.FromControl(TargetWindow)))
+                        : Screen.FromControl(TargetWindow);
+                }
 
                 // Screen.Boundsではなく物理ピクセルでの範囲を使う(表示倍率が100%以外のモニタ対策)
                 Rectangle captureArea = GetPhysicalBounds(targetScreen);

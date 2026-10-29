@@ -196,7 +196,7 @@ namespace StandardTemplate
                 MessageBoxIcon.Information);
         }
 
-        private static List<String> ListProfiles(String folder, Func<String, Boolean> isExclude)
+        internal static List<String> ListProfiles(String folder, Func<String, Boolean> isExclude)
         {
             // プロファイル一覧(StcSaveRestore側・WpfProfile)と同じく、サブフォルダの中も対象にする。
             // 検索パターン"*.xml"は拡張子が3文字のため".xmlx"などにも一致する旧仕様があるので、拡張子は自分で見る
@@ -215,7 +215,7 @@ namespace StandardTemplate
         }
 
         // folderからpathまでの相対パスを返す(pathはfolderの配下にある前提)
-        private static String GetRelativePath(String folder, String path)
+        internal static String GetRelativePath(String folder, String path)
         {
             String prefix = Path.GetFullPath(folder).TrimEnd('\\') + "\\";
             String fullPath = Path.GetFullPath(path);

@@ -38,6 +38,35 @@ TYPE public enum StandardTemplate.CaptWindow+MouseEventType
     ENUM   LeftUp = 3
     ENUM   Move = 0
 
+TYPE public static class StandardTemplate.DataFolderChooser
+    METHOD public static String ChooseFolder(String title, String initialDirectory)
+
+TYPE internal static class StandardTemplate.DataFolderMenu
+    METHOD internal static List<String> ListProfiles(String folder, Func<String, Boolean> isExclude)
+    METHOD internal static String GetRelativePath(String folder, String path)
+    METHOD public static Boolean IsChangeDataFolderCommand(Message m)
+    METHOD public static Boolean IsSysCommand(Message m, Int32 sysMenuId)
+    METHOD public static Void AppendMenuItem(Form targetForm, Int32 sysMenuId, String text)
+    METHOD public static Void AppendToSystemMenu(Form targetForm)
+    METHOD public static Void ChangeDataFolder(String appName, String currentFolder, Action<String, String> migrateFiles, Action<String> onFolderChanged = null)
+    METHOD public static Void MoveProfiles(String oldFolder, String newFolder, String appName, Func<String, Boolean> isExclude = null)
+
+TYPE public class StandardTemplate.DataGridViewEx : DataGridView
+    CTOR   public DataGridViewEx()
+    METHOD protected virtual Boolean ProcessCmdKey(ref Message msg, Keys keyData)
+    METHOD protected virtual Void OnHandleCreated(EventArgs e)
+    METHOD protected virtual Void OnMouseWheel(MouseEventArgs e)
+    METHOD protected virtual Void OnSorted(EventArgs e)
+    METHOD public Void BeginUndoBatch()
+    METHOD public Void ClearUndoHistory()
+    METHOD public Void EndUndoBatch()
+    METHOD public Void Redo()
+    METHOD public Void ResetZoom()
+    METHOD public Void Undo()
+    PROP   public Boolean CanRedo { public get; }
+    PROP   public Boolean CanUndo { public get; }
+    PROP   public Single ZoomFactor { public get; public set; }
+
 TYPE public class StandardTemplate.GenericProfile
     CTOR   public GenericProfile()
     METHOD public static String MakeKey(String attrName, String attrValue)
@@ -222,4 +251,8 @@ TYPE public enum StandardTemplate.StcUtils+FilePathType
     ENUM   WindowsFullPath = 0
     ENUM   WindowsPath = 3
 
-# total: 19 types / 182 members
+TYPE public static class StandardTemplate.UserDataLocation
+    METHOD public static String GetUserDataFolder(String appName)
+    METHOD public static Void SetUserDataFolder(String appName, String newDataFolder)
+
+# total: 23 types / 207 members

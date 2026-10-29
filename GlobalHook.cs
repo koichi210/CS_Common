@@ -281,6 +281,10 @@ namespace GlobalHook
                 State.Time = s.time;
                 State.ExtraInfo = s.dwExtraInfo;
 
+                // Cancelはイベントハンドラの中から呼ぶ想定。ハンドラの外で呼ばれて残っていた分で、
+                // 次のイベントを握りつぶさないよう、ハンドラを呼ぶ前に必ず下ろしておく
+                _isCancel = false;
+
                 try
                 {
                     HookEvent(ref State);
@@ -561,6 +565,10 @@ namespace GlobalHook
                 State.Flags = s.flags;
                 State.Time = s.time;
                 State.ExtraInfo = s.dwExtraInfo;
+
+                // Cancelはイベントハンドラの中から呼ぶ想定。ハンドラの外で呼ばれて残っていた分で、
+                // 次のイベントを握りつぶさないよう、ハンドラを呼ぶ前に必ず下ろしておく
+                _isCancel = false;
 
                 try
                 {
