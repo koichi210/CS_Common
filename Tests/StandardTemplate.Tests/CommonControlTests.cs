@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using StandardTemplate;
@@ -101,6 +102,100 @@ namespace StandardTemplate.Tests
                 .ToArray();
 
             CollectionAssert.AreEqual(new[] { "a.json", "b.xml", Path.Combine("sub", "c.json") }, names);
+        }
+
+        // UserDataLocationが案内板(DataFolder.txt)を置く場所(private)。テストで書き換えるので、
+        // 元の中身を退避して、終わったら必ず戻す
+        private static void WithPointerFile(Action<string> body)
+        {
+            string pointerPath = (string)typeof(UserDataLocation)
+                .GetMethod("GetPointerFilePath", BindingFlags.NonPublic | BindingFlags.Static)
+                .Invoke(null, null);
+            string backup = File.Exists(pointerPath) ? File.ReadAllText(pointerPath) : null;
+            try
+            {
+                body(pointerPath);
+            }
+            finally
+            {
+                if (File.Exists(pointerPath))
+                {
+                    File.SetAttributes(pointerPath, FileAttributes.Normal);
+                }
+                if (backup != null)
+                {
+                    File.WriteAllText(pointerPath, backup);
+                }
+                else
+                {
+                    File.Delete(pointerPath);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void DataFolderMenu_案内板を書き換えられない時は何も移さず失敗を返す()
+        {
+            WithPointerFile(pointerPath =>
+            {
+                string oldFolder = Path.Combine(tempDirectory, "old");
+                string newFolder = Path.Combine(tempDirectory, "new");
+                Directory.CreateDirectory(oldFolder);
+                File.WriteAllText(pointerPath, oldFolder);
+                File.SetAttributes(pointerPath, FileAttributes.ReadOnly);
+
+                bool migrated = false;
+                string errorMessage;
+                bool result = DataFolderMenu.TryApplyDataFolder("Test", oldFolder, newFolder,
+                    (o, n) => migrated = true, out errorMessage);
+
+                Assert.IsFalse(result);
+                Assert.IsFalse(migrated, "以前は先に移していたため、失敗時に戻す処理が必要だった");
+                Assert.IsNotNull(errorMessage);
+                Assert.AreEqual(oldFolder, File.ReadAllLines(pointerPath)[0]);
+            });
+        }
+
+        [TestMethod]
+        public void DataFolderMenu_移動で例外が出たら案内板を元の保存先へ戻す()
+        {
+            WithPointerFile(pointerPath =>
+            {
+                string oldFolder = Path.Combine(tempDirectory, "old");
+                string newFolder = Path.Combine(tempDirectory, "new");
+                Directory.CreateDirectory(oldFolder);
+                File.WriteAllText(pointerPath, oldFolder);
+
+                string errorMessage;
+                bool result = DataFolderMenu.TryApplyDataFolder("Test", oldFolder, newFolder,
+                    (o, n) => { throw new IOException("boom"); }, out errorMessage);
+
+                Assert.IsFalse(result);
+                StringAssert.Contains(errorMessage, "boom");
+                Assert.AreEqual(oldFolder, File.ReadAllLines(pointerPath)[0], "案内板だけ新しい保存先を向いたままにしない");
+            });
+        }
+
+        [TestMethod]
+        public void DataFolderMenu_成功時は案内板を書いてからファイルを移す()
+        {
+            WithPointerFile(pointerPath =>
+            {
+                string oldFolder = Path.Combine(tempDirectory, "old");
+                string newFolder = Path.Combine(tempDirectory, "new");
+                Directory.CreateDirectory(oldFolder);
+                File.WriteAllText(pointerPath, oldFolder);
+
+                string pointerAtMigration = null;
+                string errorMessage;
+                bool result = DataFolderMenu.TryApplyDataFolder("Test", oldFolder, newFolder,
+                    (o, n) => pointerAtMigration = File.ReadAllLines(pointerPath)[0], out errorMessage);
+
+                Assert.IsTrue(result);
+                Assert.IsNull(errorMessage);
+                Assert.AreEqual(newFolder, pointerAtMigration, "移す時点で案内板は書き換え済み");
+                Assert.AreEqual(newFolder, File.ReadAllLines(pointerPath)[0]);
+            });
         }
 
         [TestMethod]

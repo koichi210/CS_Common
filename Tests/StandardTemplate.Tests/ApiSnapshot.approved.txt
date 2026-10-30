@@ -42,6 +42,7 @@ TYPE public static class StandardTemplate.DataFolderChooser
     METHOD public static String ChooseFolder(String title, String initialDirectory)
 
 TYPE internal static class StandardTemplate.DataFolderMenu
+    METHOD internal static Boolean TryApplyDataFolder(String appName, String currentFolder, String selectedFolder, Action<String, String> migrateFiles, out String errorMessage)
     METHOD internal static List<String> ListProfiles(String folder, Func<String, Boolean> isExclude)
     METHOD internal static String GetRelativePath(String folder, String path)
     METHOD public static Boolean IsChangeDataFolderCommand(Message m)
@@ -255,4 +256,4 @@ TYPE public static class StandardTemplate.UserDataLocation
     METHOD public static String GetUserDataFolder(String appName)
     METHOD public static Void SetUserDataFolder(String appName, String newDataFolder)
 
-# total: 23 types / 207 members
+# total: 23 types / 208 members

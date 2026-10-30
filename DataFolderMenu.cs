@@ -92,26 +92,11 @@ namespace StandardTemplate
                 return;
             }
 
-            if (migrateFiles != null)
+            String errorMessage;
+            if (!TryApplyDataFolder(appName, currentFolder, selectedFolder, migrateFiles, out errorMessage))
             {
-                migrateFiles(currentFolder, selectedFolder);
-            }
-
-            try
-            {
-                UserDataLocation.SetUserDataFolder(appName, selectedFolder);
-            }
-            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
-            {
-                // exeが書き込み禁止の場所にあるなどで案内板を書き換えられなかった時は、
-                // 移したファイルを元の保存先へ戻す(次回起動でプロファイルが見えなくなるのを防ぐ)
-                if (migrateFiles != null)
-                {
-                    migrateFiles(selectedFolder, currentFolder);
-                }
-
                 MessageBox.Show(
-                    "保存先を変更できなかったよ" + Environment.NewLine + ex.Message,
+                    "保存先を変更できなかったよ" + Environment.NewLine + errorMessage,
                     appName + " - データ保存先の変更",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
@@ -134,6 +119,55 @@ namespace StandardTemplate
             {
                 onFolderChanged(selectedFolder);
             }
+        }
+
+        // 選んだ保存先を案内板(DataFolder.txt)に書き込み、その後でファイルを移す。
+        // 案内板を先に書くのは、書き込み禁止の場所にexeがある等で失敗した時に、まだ何も移していない
+        // 状態で止められるため(以前は先に移してから書いたので、失敗時に移した分を戻す必要があり、
+        // その戻し処理が「移動しますか?」の確認をもう一度出してしまっていた。「いいえ」を選ぶと
+        // ファイルだけ新しい保存先に残り、次回起動でプロファイルが見えなくなる)。
+        // ファイルの移動で例外が出た時は、案内板を元の保存先へ戻して失敗を返す。
+        // 失敗時はerrorMessageに理由を入れる
+        internal static Boolean TryApplyDataFolder(String appName, String currentFolder, String selectedFolder,
+            Action<String, String> migrateFiles, out String errorMessage)
+        {
+            errorMessage = null;
+
+            try
+            {
+                UserDataLocation.SetUserDataFolder(appName, selectedFolder);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
+
+            if (migrateFiles == null)
+            {
+                return true;
+            }
+
+            try
+            {
+                migrateFiles(currentFolder, selectedFolder);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                try
+                {
+                    UserDataLocation.SetUserDataFolder(appName, currentFolder);
+                }
+                catch (Exception restoreEx) when (restoreEx is IOException || restoreEx is UnauthorizedAccessException)
+                {
+                    // 戻せなかった時は、元の理由に加えて案内板が新しい保存先を向いたままであることを伝える
+                    errorMessage += Environment.NewLine + "案内板(DataFolder.txt)を元に戻せなかったよ: " + restoreEx.Message;
+                }
+                return false;
+            }
+
+            return true;
         }
 
         // 旧フォルダのプロファイル(*.xml / *.json)を新フォルダへ移す。
