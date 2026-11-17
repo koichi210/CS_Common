@@ -122,7 +122,8 @@ namespace InputSimulation
             MIDDLE_UP = 0x0040,
             X_DOWN = 0x0080,
             X_UP = 0x0100,
-            WHEEL = 0x0800
+            WHEEL = 0x0800,
+            HWHEEL = 0x1000
         }
 
         /// <summary>

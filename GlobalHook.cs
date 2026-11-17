@@ -381,6 +381,8 @@ namespace GlobalHook
             X1_UP,
             X2_DOWN,
             X2_UP,
+            WHEEL_LEFT,
+            WHEEL_RIGHT,
             UNKNOWN
         }
 
@@ -646,6 +648,9 @@ namespace GlobalHook
                         default:
                             return Stroke.UNKNOWN;
                     }
+                case 0x020E:
+                    // WM_MOUSEHWHEEL(横ホイール・チルト)。上位ワードが正なら右、負なら左へ回した
+                    return ((short)((s.mouseData >> 16) & 0xffff) > 0) ? Stroke.WHEEL_RIGHT : Stroke.WHEEL_LEFT;
                 default:
                     return Stroke.UNKNOWN;
             }
